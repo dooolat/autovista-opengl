@@ -2,14 +2,17 @@
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
+#include "AvtoVista.h"
+#include "CameraControls.h"
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <vector>
+#include <stdexcept>
 
-#include <glm/mat4x4.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #ifndef AUTOVISTA_SHADER_DIR
@@ -44,8 +47,8 @@ GLuint compileShader(GLenum type, const std::string& source, const char* label) 
 }
 
 GLuint createProgram(const std::filesystem::path& shaderDir) {
-    const GLuint vertex = compileShader(GL_VERTEX_SHADER, readText(shaderDir / "basic.vert"), "Vertex");
-    const GLuint fragment = compileShader(GL_FRAGMENT_SHADER, readText(shaderDir / "basic.frag"), "Fragment");
+    const GLuint vertex = compileShader(GL_VERTEX_SHADER, readText(shaderDir / "scene.vert"), "Vertex");
+    const GLuint fragment = compileShader(GL_FRAGMENT_SHADER, readText(shaderDir / "scene.frag"), "Fragment");
     if (!vertex || !fragment) {
         if (vertex) glDeleteShader(vertex);
         if (fragment) glDeleteShader(fragment);
@@ -84,7 +87,7 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(960, 640, "AutoVista - OpenGL Foundation", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(960, 640, "AutoVista - Orbit Camera Scene", nullptr, nullptr);
     if (!window) {
         std::cerr << "Could not create an OpenGL 3.3 window.\n";
         glfwTerminate();
@@ -105,7 +108,7 @@ int main() {
             glfwSetWindowShouldClose(current, GLFW_TRUE);
     });
 
-    GLuint program = 0, vao = 0, vbo = 0, ebo = 0;
+    GLuint program = 0;
     try {
         program = createProgram(std::filesystem::path(AUTOVISTA_SHADER_DIR));
     } catch (const std::exception& error) {
@@ -117,48 +120,51 @@ int main() {
         return 1;
     }
 
-    const float vertices[] = {
-        -0.75f, -0.65f, 0.0f, 0.12f, 0.46f, 0.86f,
-         0.75f, -0.65f, 0.0f, 0.20f, 0.72f, 0.38f,
-         0.00f,  0.75f, 0.0f, 0.94f, 0.56f, 0.16f
-    };
-    const unsigned int indices[] = {0, 1, 2};
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-    glGenBuffers(1, &ebo);
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), nullptr);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
-                          reinterpret_cast<void*>(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    glBindVertexArray(0);
+    OrbitCamera camera(glm::vec3(0.0f), 8.0f);
+    CameraControls controls(window, camera);
+    AvtoVistaScene scene;
+    if (!scene.initialize()) {
+        std::cerr << "Could not create scene geometry.\n";
+        glDeleteProgram(program);
+        controls.detach();
+        glfwDestroyWindow(window);
+        glfwTerminate();
+        return 1;
+    }
 
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.72f, 0.75f, 0.78f, 1.0f);
-    const GLint mvpLocation = glGetUniformLocation(program, "uMVP");
-    const glm::mat4 mvp(1.0f);
+    const GLint modelLocation = glGetUniformLocation(program, "uModel");
+    const GLint viewLocation = glGetUniformLocation(program, "uView");
+    const GLint projectionLocation = glGetUniformLocation(program, "uProjection");
+    const GLint colorLocation = glGetUniformLocation(program, "uColor");
     int width = 0, height = 0;
+    double previousTime = glfwGetTime();
     while (glfwWindowShouldClose(window) == GLFW_FALSE) {
         glfwPollEvents();
+        const double currentTime = glfwGetTime();
+        scene.update(static_cast<float>(currentTime - previousTime));
+        previousTime = currentTime;
+
         glfwGetFramebufferSize(window, &width, &height);
+        if (width <= 0 || height <= 0) continue;
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glUseProgram(program);
-        glUniformMatrix4fv(mvpLocation, 1, GL_FALSE, glm::value_ptr(mvp));
-        glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
+        const glm::mat4 view = camera.viewMatrix();
+        const glm::mat4 projection = glm::perspective(
+            glm::radians(45.0f), static_cast<float>(width) / static_cast<float>(height),
+            0.1f, 100.0f);
+        glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
+        scene.render(modelLocation, colorLocation);
+        glBindVertexArray(0);
         glfwSwapBuffers(window);
     }
 
-    glDeleteBuffers(1, &ebo);
-    glDeleteBuffers(1, &vbo);
-    glDeleteVertexArrays(1, &vao);
+    scene.destroy();
     glDeleteProgram(program);
+    controls.detach();
     glfwDestroyWindow(window);
     glfwTerminate();
     return 0;
