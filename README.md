@@ -1,8 +1,9 @@
-# AutoVista Stage 1 Foundation
+# AutoVista Stage 1 — Orbit Camera and Scene Prototype
 
-Minimal C++17 / OpenGL 3.3 Core renderer. It opens a GLFW window, loads GLAD,
-compiles the basic GLSL shaders, and draws an indexed colored triangle with
-VAO/VBO/EBO. This is the shared foundation for later team modules.
+This C++17 / OpenGL 3.3 Core prototype renders a rotating black cylinder with
+a red `+` marker and a blue cube attached to it. The cylinder and cube share
+the same parent rotation. The orbit camera uses a Y-up coordinate system and
+supports mouse orbit and wheel zoom.
 
 ## Requirements
 
@@ -24,4 +25,6 @@ cmake --build build --config Release
 .\build\Release\AutoVista.exe
 ```
 
-Press Esc to close the window.
+Hold the left mouse button and drag to orbit. Dragging right moves the cube
+right on screen; dragging up moves it up. Use the mouse wheel to zoom. Press
+Esc to close the window.
