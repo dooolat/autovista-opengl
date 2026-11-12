@@ -4,6 +4,7 @@
 
 #include "AvtoVista.h"
 #include "CameraControls.h"
+#include "ControlHelpOverlay.h"
 
 #include <filesystem>
 #include <fstream>
@@ -122,9 +123,11 @@ int main() {
 
     OrbitCamera camera(glm::vec3(0.0f), 8.0f);
     CameraControls controls(window, camera);
+    ControlHelpOverlay controlHelp(window);
     AvtoVistaScene scene;
-    if (!scene.initialize()) {
+    if (!scene.initialize() || !controlHelp.initialize(std::filesystem::path(AUTOVISTA_SHADER_DIR))) {
         std::cerr << "Could not create scene geometry.\n";
+        controlHelp.destroy();
         glDeleteProgram(program);
         controls.detach();
         glfwDestroyWindow(window);
@@ -143,8 +146,11 @@ int main() {
     while (glfwWindowShouldClose(window) == GLFW_FALSE) {
         glfwPollEvents();
         const double currentTime = glfwGetTime();
-        scene.update(static_cast<float>(currentTime - previousTime));
+        const float deltaTime = static_cast<float>(currentTime - previousTime);
         previousTime = currentTime;
+        controls.update(deltaTime);
+        controlHelp.update();
+        scene.update(deltaTime);
 
         glfwGetFramebufferSize(window, &width, &height);
         if (width <= 0 || height <= 0) continue;
@@ -158,11 +164,13 @@ int main() {
         glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
         scene.render(modelLocation, colorLocation);
+        controlHelp.render(width, height);
         glBindVertexArray(0);
         glfwSwapBuffers(window);
     }
 
     scene.destroy();
+    controlHelp.destroy();
     glDeleteProgram(program);
     controls.detach();
     glfwDestroyWindow(window);
