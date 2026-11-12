@@ -4,6 +4,7 @@
 
 #include "AvtoVista.h"
 #include "CameraControls.h"
+#include "ConfiguratorControls.h"
 #include "Lighting.h"
 #include "ControlHelpOverlay.h"
 
@@ -131,6 +132,7 @@ int main() {
 
     OrbitCamera camera(glm::vec3(0.0f), 8.0f);
     CameraControls controls(window, camera);
+    ConfiguratorControls configurator(window);
     ControlHelpOverlay controlHelp(window);
     AvtoVistaScene scene;
     if (!scene.initialize() || !controlHelp.initialize(std::filesystem::path(AUTOVISTA_SHADER_DIR))) {
@@ -160,8 +162,10 @@ int main() {
         const float deltaTime = static_cast<float>(currentTime - previousTime);
         previousTime = currentTime;
         controls.update(deltaTime);
+        configurator.update();
         controlHelp.update();
-        scene.update(deltaTime);
+        const ConfiguratorState& state = configurator.state();
+        if (!state.turntablePaused) scene.update(deltaTime);
 
         glfwGetFramebufferSize(window, &width, &height);
         if (width <= 0 || height <= 0) continue;
@@ -175,10 +179,10 @@ int main() {
         glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
         glUniform3fv(viewPosLocation, 1, glm::value_ptr(camera.position()));
-        glUniform1f(shininessLocation, 64.0f);
-        glUniform1f(specularLocation, 0.6f);
+        glUniform1f(shininessLocation, state.shininess);
+        glUniform1f(specularLocation, state.specularStrength);
         uploadLights(program, gLights);
-        scene.render(modelLocation, colorLocation);
+        scene.render(modelLocation, colorLocation, state.paintColor);
         controlHelp.render(width, height);
         glBindVertexArray(0);
         glfwSwapBuffers(window);

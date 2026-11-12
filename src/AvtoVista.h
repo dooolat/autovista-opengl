@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glad/gl.h>
+#include <glm/vec3.hpp>
 
 #include <cstdint>
 #include <vector>
@@ -13,7 +14,8 @@ public:
 
     bool initialize();
     void update(float deltaTimeSeconds);
-    void render(GLint modelLocation, GLint colorLocation) const;
+    void render(GLint modelLocation, GLint colorLocation,
+                const glm::vec3& paintColor) const;
     void destroy();
 
 private:
