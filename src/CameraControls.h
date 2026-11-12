@@ -13,6 +13,7 @@ public:
     CameraControls(const CameraControls&) = delete;
     CameraControls& operator=(const CameraControls&) = delete;
 
+    void update(float deltaTimeSeconds);
     void detach();
 
 private:
