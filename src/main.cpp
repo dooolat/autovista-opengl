@@ -4,7 +4,9 @@
 
 #include "AvtoVista.h"
 #include "CameraControls.h"
+#include "Lighting.h"
 
+#include <array>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -72,6 +74,8 @@ GLuint createProgram(const std::filesystem::path& shaderDir) {
     return 0;
 }
 
+std::array<Light, kLightCount> gLights = makeStudioLights();
+
 void framebufferSizeCallback(GLFWwindow*, int width, int height) {
     glViewport(0, 0, width, height);
 }
@@ -106,6 +110,10 @@ int main() {
     glfwSetKeyCallback(window, [](GLFWwindow* current, int key, int, int action, int) {
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
             glfwSetWindowShouldClose(current, GLFW_TRUE);
+        if (action == GLFW_PRESS && key >= GLFW_KEY_1 && key < GLFW_KEY_1 + kLightCount) {
+            Light& light = gLights[static_cast<std::size_t>(key - GLFW_KEY_1)];
+            light.enabled = !light.enabled;
+        }
     });
 
     GLuint program = 0;
@@ -138,6 +146,9 @@ int main() {
     const GLint viewLocation = glGetUniformLocation(program, "uView");
     const GLint projectionLocation = glGetUniformLocation(program, "uProjection");
     const GLint colorLocation = glGetUniformLocation(program, "uColor");
+    const GLint viewPosLocation = glGetUniformLocation(program, "uViewPos");
+    const GLint shininessLocation = glGetUniformLocation(program, "uShininess");
+    const GLint specularLocation = glGetUniformLocation(program, "uSpecularStrength");
     int width = 0, height = 0;
     double previousTime = glfwGetTime();
     while (glfwWindowShouldClose(window) == GLFW_FALSE) {
@@ -157,6 +168,10 @@ int main() {
             0.1f, 100.0f);
         glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
+        glUniform3fv(viewPosLocation, 1, glm::value_ptr(camera.position()));
+        glUniform1f(shininessLocation, 64.0f);
+        glUniform1f(specularLocation, 0.6f);
+        uploadLights(program, gLights);
         scene.render(modelLocation, colorLocation);
         glBindVertexArray(0);
         glfwSwapBuffers(window);
