@@ -1,5 +1,6 @@
 #version 330 core
 in vec3 vWorldPos;
+in vec2 vTexCoord;
 out vec4 FragColor;
 
 #define MAX_LIGHTS 3
@@ -12,6 +13,8 @@ struct Light {
 };
 
 uniform vec3  uColor;
+uniform sampler2D uFloorTexture;
+uniform int uUseTexture;
 uniform vec3  uViewPos;
 uniform float uShininess;
 uniform float uSpecularStrength;
@@ -25,7 +28,8 @@ void main() {
     vec3 V = normalize(uViewPos - vWorldPos);
     if (dot(N, V) < 0.0) N = -N;
 
-    vec3 result = 0.15 * uColor; // ambient
+    vec3 baseColor = uUseTexture != 0 ? texture(uFloorTexture, vTexCoord).rgb : uColor;
+    vec3 result = 0.15 * baseColor; // ambient
 
     for (int i = 0; i < MAX_LIGHTS; ++i) {
         if (uLights[i].enabled == 0) continue;
@@ -40,7 +44,7 @@ void main() {
         float atten = 1.0 / (1.0 + 0.045 * dist + 0.0075 * dist * dist);
 
         vec3 lightCol = uLights[i].color * uLights[i].intensity;
-        result += atten * lightCol * (diff * uColor + uSpecularStrength * spec);
+        result += atten * lightCol * (diff * baseColor + uSpecularStrength * spec);
     }
 
     FragColor = vec4(result, 1.0);
