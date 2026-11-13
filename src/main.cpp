@@ -4,7 +4,11 @@
 
 #include "AvtoVista.h"
 #include "CameraControls.h"
+#include "ConfiguratorControls.h"
+#include "Lighting.h"
+#include "ControlHelpOverlay.h"
 
+#include <array>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -72,6 +76,8 @@ GLuint createProgram(const std::filesystem::path& shaderDir) {
     return 0;
 }
 
+std::array<Light, kLightCount> gLights = makeStudioLights();
+
 void framebufferSizeCallback(GLFWwindow*, int width, int height) {
     glViewport(0, 0, width, height);
 }
@@ -106,6 +112,10 @@ int main() {
     glfwSetKeyCallback(window, [](GLFWwindow* current, int key, int, int action, int) {
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
             glfwSetWindowShouldClose(current, GLFW_TRUE);
+        if (action == GLFW_PRESS && key >= GLFW_KEY_1 && key < GLFW_KEY_1 + kLightCount) {
+            Light& light = gLights[static_cast<std::size_t>(key - GLFW_KEY_1)];
+            light.enabled = !light.enabled;
+        }
     });
 
     GLuint program = 0;
@@ -122,9 +132,12 @@ int main() {
 
     OrbitCamera camera(glm::vec3(0.0f), 8.0f);
     CameraControls controls(window, camera);
+    ConfiguratorControls configurator(window);
+    ControlHelpOverlay controlHelp(window);
     AvtoVistaScene scene;
-    if (!scene.initialize()) {
+    if (!scene.initialize() || !controlHelp.initialize(std::filesystem::path(AUTOVISTA_SHADER_DIR))) {
         std::cerr << "Could not create scene geometry.\n";
+        controlHelp.destroy();
         glDeleteProgram(program);
         controls.detach();
         glfwDestroyWindow(window);
@@ -138,13 +151,21 @@ int main() {
     const GLint viewLocation = glGetUniformLocation(program, "uView");
     const GLint projectionLocation = glGetUniformLocation(program, "uProjection");
     const GLint colorLocation = glGetUniformLocation(program, "uColor");
+    const GLint viewPosLocation = glGetUniformLocation(program, "uViewPos");
+    const GLint shininessLocation = glGetUniformLocation(program, "uShininess");
+    const GLint specularLocation = glGetUniformLocation(program, "uSpecularStrength");
     int width = 0, height = 0;
     double previousTime = glfwGetTime();
     while (glfwWindowShouldClose(window) == GLFW_FALSE) {
         glfwPollEvents();
         const double currentTime = glfwGetTime();
-        scene.update(static_cast<float>(currentTime - previousTime));
+        const float deltaTime = static_cast<float>(currentTime - previousTime);
         previousTime = currentTime;
+        controls.update(deltaTime);
+        configurator.update();
+        controlHelp.update();
+        const ConfiguratorState& state = configurator.state();
+        if (!state.turntablePaused) scene.update(deltaTime);
 
         glfwGetFramebufferSize(window, &width, &height);
         if (width <= 0 || height <= 0) continue;
@@ -157,12 +178,18 @@ int main() {
             0.1f, 100.0f);
         glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
-        scene.render(modelLocation, colorLocation);
+        glUniform3fv(viewPosLocation, 1, glm::value_ptr(camera.position()));
+        glUniform1f(shininessLocation, state.shininess);
+        glUniform1f(specularLocation, state.specularStrength);
+        uploadLights(program, gLights);
+        scene.render(modelLocation, colorLocation, state.paintColor);
+        controlHelp.render(width, height);
         glBindVertexArray(0);
         glfwSwapBuffers(window);
     }
 
     scene.destroy();
+    controlHelp.destroy();
     glDeleteProgram(program);
     controls.detach();
     glfwDestroyWindow(window);
