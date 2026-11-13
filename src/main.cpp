@@ -151,6 +151,7 @@ int main() {
     const GLint viewLocation = glGetUniformLocation(program, "uView");
     const GLint projectionLocation = glGetUniformLocation(program, "uProjection");
     const GLint colorLocation = glGetUniformLocation(program, "uColor");
+    const GLint texturedLocation = glGetUniformLocation(program, "uUseTexture");
     const GLint viewPosLocation = glGetUniformLocation(program, "uViewPos");
     const GLint shininessLocation = glGetUniformLocation(program, "uShininess");
     const GLint specularLocation = glGetUniformLocation(program, "uSpecularStrength");
@@ -182,7 +183,7 @@ int main() {
         glUniform1f(shininessLocation, state.shininess);
         glUniform1f(specularLocation, state.specularStrength);
         uploadLights(program, gLights);
-        scene.render(modelLocation, colorLocation, state.paintColor);
+        scene.render(modelLocation, colorLocation, texturedLocation, state.paintColor);
         controlHelp.render(width, height);
         glBindVertexArray(0);
         glfwSwapBuffers(window);

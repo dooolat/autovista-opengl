@@ -61,6 +61,21 @@ MeshData cylinderData(unsigned int segments = 64) {
     return mesh;
 }
 
+MeshData floorData() {
+    MeshData mesh;
+    constexpr float extent = 5.0f;
+    constexpr float textureRepeat = 8.0f;
+    constexpr float y = -0.18f;
+    mesh.vertices = {
+        -extent, y, -extent, 0.0f, 0.0f,
+         extent, y, -extent, textureRepeat, 0.0f,
+         extent, y,  extent, textureRepeat, textureRepeat,
+        -extent, y,  extent, 0.0f, textureRepeat
+    };
+    mesh.indices = {0, 2, 1, 0, 3, 2};
+    return mesh;
+}
+
 MeshData cubeData() {
     MeshData mesh;
     mesh.vertices = {
@@ -89,8 +104,10 @@ glm::mat4 boxTransform(const glm::vec3& position, const glm::vec3& size,
 } // namespace
 
 bool AvtoVistaScene::Mesh::create(const std::vector<float>& vertices,
-                                  const std::vector<std::uint32_t>& indices) {
-    if (vertices.empty() || indices.empty()) return false;
+                                  const std::vector<std::uint32_t>& indices,
+                                  unsigned int vertexStride) {
+    if (vertices.empty() || indices.empty() || vertexStride < 3 ||
+        vertices.size() % vertexStride != 0) return false;
 
     indexCount = static_cast<GLsizei>(indices.size());
     glGenVertexArrays(1, &vao);
@@ -105,8 +122,14 @@ bool AvtoVistaScene::Mesh::create(const std::vector<float>& vertices,
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
                  static_cast<GLsizeiptr>(indices.size() * sizeof(std::uint32_t)),
                  indices.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+    const GLsizei stride = static_cast<GLsizei>(vertexStride * sizeof(float));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, nullptr);
     glEnableVertexAttribArray(0);
+    if (vertexStride >= 5) {
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride,
+                              reinterpret_cast<void*>(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+    }
     glBindVertexArray(0);
     return vao != 0 && vbo != 0 && ebo != 0;
 }
@@ -127,8 +150,11 @@ void AvtoVistaScene::Mesh::destroy() {
 bool AvtoVistaScene::initialize() {
     const MeshData cylinder = cylinderData();
     const MeshData cube = cubeData();
+    const MeshData floor = floorData();
     if (!cylinder_.create(cylinder.vertices, cylinder.indices) ||
-        !cube_.create(cube.vertices, cube.indices)) {
+        !cube_.create(cube.vertices, cube.indices) ||
+        !floor_.create(floor.vertices, floor.indices, 5) ||
+        !floorTexture_.initialize()) {
         destroy();
         return false;
     }
@@ -142,10 +168,12 @@ void AvtoVistaScene::update(float deltaTimeSeconds) {
 }
 
 void AvtoVistaScene::render(GLint modelLocation, GLint colorLocation,
+                            GLint texturedLocation,
                             const glm::vec3& paintColor) const {
     const glm::mat4 identity(1.0f);
     const glm::mat4 turntable = glm::rotate(identity, angle_, glm::vec3(0.0f, 1.0f, 0.0f));
     const auto draw = [&](const Mesh& mesh, const glm::mat4& model, const glm::vec3& color) {
+        glUniform1i(texturedLocation, GL_FALSE);
         glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
         glUniform3fv(colorLocation, 1, glm::value_ptr(color));
         mesh.draw();
@@ -158,9 +186,16 @@ void AvtoVistaScene::render(GLint modelLocation, GLint colorLocation,
         draw(cube_, turntable * boxTransform(position, size), paintColor);
     };
 
-    // Showroom floor and the rotating display platform.
-    draw(cube_, boxTransform({0.0f, -0.24f, 0.0f}, {10.0f, 0.12f, 10.0f}),
-         {0.14f, 0.17f, 0.21f});
+    // Textured showroom floor. Keep it separate so the car meshes stay unchanged.
+    floorTexture_.bind(0);
+    glUniform1i(texturedLocation, GL_TRUE);
+    glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(identity));
+    glUniform3fv(colorLocation, 1, glm::value_ptr(glm::vec3(1.0f)));
+    floor_.draw();
+
+    // Rotating display platform.
+    draw(cylinder_, turntable * boxTransform({0.0f, -0.06f, 0.0f}, {4.5f, 0.18f, 4.5f}),
+         {0.055f, 0.065f, 0.08f});
     draw(cylinder_, turntable * boxTransform({0.0f, -0.06f, 0.0f}, {4.5f, 0.18f, 4.5f}),
          {0.055f, 0.065f, 0.08f});
     draw(cylinder_, turntable * boxTransform({0.0f, 0.035f, 0.0f}, {4.28f, 0.035f, 4.28f}),
@@ -216,6 +251,8 @@ void AvtoVistaScene::render(GLint modelLocation, GLint colorLocation,
 }
 
 void AvtoVistaScene::destroy() {
+    floorTexture_.destroy();
+    floor_.destroy();
     cube_.destroy();
     cylinder_.destroy();
 }
