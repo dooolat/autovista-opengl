@@ -141,7 +141,8 @@ void AvtoVistaScene::update(float deltaTimeSeconds) {
     }
 }
 
-void AvtoVistaScene::render(GLint modelLocation, GLint colorLocation) const {
+void AvtoVistaScene::render(GLint modelLocation, GLint colorLocation,
+                            const glm::vec3& paintColor) const {
     const glm::mat4 identity(1.0f);
     const glm::mat4 turntable = glm::rotate(identity, angle_, glm::vec3(0.0f, 1.0f, 0.0f));
     const auto draw = [&](const Mesh& mesh, const glm::mat4& model, const glm::vec3& color) {
@@ -153,6 +154,9 @@ void AvtoVistaScene::render(GLint modelLocation, GLint colorLocation) const {
                                 const glm::vec3& color, float zRotation = 0.0f) {
         draw(cube_, turntable * boxTransform(position, size, zRotation), color);
     };
+    const auto drawPaintedCarBox = [&](const glm::vec3& position, const glm::vec3& size) {
+        draw(cube_, turntable * boxTransform(position, size), paintColor);
+    };
 
     // Showroom floor and the rotating display platform.
     draw(cube_, boxTransform({0.0f, -0.24f, 0.0f}, {10.0f, 0.12f, 10.0f}),
@@ -163,10 +167,8 @@ void AvtoVistaScene::render(GLint modelLocation, GLint colorLocation) const {
          {0.27f, 0.31f, 0.35f});
 
     // Main body and cabin.
-    drawCarBox({0.0f, 0.43f, 0.0f}, {2.55f, 0.43f, 1.12f},
-               {0.78f, 0.10f, 0.055f});
-    drawCarBox({-0.18f, 0.77f, 0.0f}, {1.35f, 0.34f, 0.91f},
-               {0.82f, 0.12f, 0.065f});
+    drawPaintedCarBox({0.0f, 0.43f, 0.0f}, {2.55f, 0.43f, 1.12f});
+    drawPaintedCarBox({-0.18f, 0.77f, 0.0f}, {1.35f, 0.34f, 0.91f});
 
     // Dark windows and sloped front and rear glass.
     for (const float side : {-1.0f, 1.0f}) {

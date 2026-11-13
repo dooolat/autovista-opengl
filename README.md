@@ -25,6 +25,7 @@ cmake --build build --config Release
 .\build\Release\AutoVista.exe
 ```
 
-Hold the left mouse button and drag to orbit. Dragging right moves the cube
-right on screen; dragging up moves it up. Use the mouse wheel to zoom. Press
-Esc to close the window.
+Drag with the left mouse button to orbit and use the wheel to zoom. Use
+WASD or the arrow keys to orbit, Q/E to zoom, 1-3 to toggle studio lights,
+5-8 to choose paint, M to switch matte or glossy finish, and Space to pause or
+resume the turntable. Press H to show or hide controls and Esc to close.

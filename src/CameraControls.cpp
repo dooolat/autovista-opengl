@@ -1,11 +1,39 @@
 #include "CameraControls.h"
 
+#include <algorithm>
+#include <cmath>
+
 CameraControls::CameraControls(GLFWwindow* window, OrbitCamera& camera)
     : window_(window), camera_(&camera) {
     glfwSetWindowUserPointer(window_, this);
     glfwSetMouseButtonCallback(window_, mouseButtonCallback);
     glfwSetCursorPosCallback(window_, cursorPositionCallback);
     glfwSetScrollCallback(window_, scrollCallback);
+}
+
+void CameraControls::update(float deltaTimeSeconds) {
+    if (window_ == nullptr || camera_ == nullptr || !std::isfinite(deltaTimeSeconds)) return;
+
+    const float deltaTime = std::clamp(deltaTimeSeconds, 0.0f, 0.05f);
+    const bool left = glfwGetKey(window_, GLFW_KEY_A) == GLFW_PRESS ||
+                      glfwGetKey(window_, GLFW_KEY_LEFT) == GLFW_PRESS;
+    const bool right = glfwGetKey(window_, GLFW_KEY_D) == GLFW_PRESS ||
+                       glfwGetKey(window_, GLFW_KEY_RIGHT) == GLFW_PRESS;
+    const bool up = glfwGetKey(window_, GLFW_KEY_W) == GLFW_PRESS ||
+                    glfwGetKey(window_, GLFW_KEY_UP) == GLFW_PRESS;
+    const bool down = glfwGetKey(window_, GLFW_KEY_S) == GLFW_PRESS ||
+                      glfwGetKey(window_, GLFW_KEY_DOWN) == GLFW_PRESS;
+    const bool zoomIn = glfwGetKey(window_, GLFW_KEY_Q) == GLFW_PRESS;
+    const bool zoomOut = glfwGetKey(window_, GLFW_KEY_E) == GLFW_PRESS;
+
+    constexpr float radiansPerSecond = 1.4f;
+    constexpr float zoomStepsPerSecond = 4.0f;
+    const float yawDirection = static_cast<float>(right) - static_cast<float>(left);
+    const float pitchDirection = static_cast<float>(up) - static_cast<float>(down);
+    camera_->orbit(yawDirection * radiansPerSecond * deltaTime,
+                   pitchDirection * radiansPerSecond * deltaTime);
+    camera_->zoom((static_cast<float>(zoomIn) - static_cast<float>(zoomOut)) *
+                  zoomStepsPerSecond * deltaTime);
 }
 
 void CameraControls::detach() {
