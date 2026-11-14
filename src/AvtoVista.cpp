@@ -193,12 +193,33 @@ void AvtoVistaScene::render(GLint modelLocation, GLint colorLocation,
     glUniform3fv(colorLocation, 1, glm::value_ptr(glm::vec3(1.0f)));
     floor_.draw();
 
-    // Rotating display platform.
-    draw(cylinder_, turntable * boxTransform({0.0f, -0.06f, 0.0f}, {4.5f, 0.18f, 4.5f}),
+    // Two simple walls form a backdrop along the rear and left edges.
+    draw(cube_, boxTransform({0.0f, 1.32f, -4.86f}, {9.8f, 3.0f, 0.18f}),
+         {0.20f, 0.25f, 0.31f});
+    draw(cube_, boxTransform({-4.86f, 1.32f, 0.0f}, {0.18f, 3.0f, 9.8f}),
+         {0.20f, 0.25f, 0.31f});
+
+    // Three cube-built columns mark the rear and side-wall corners.
+    const glm::vec3 columnPositions[] = {
+        {-4.25f, 1.32f, -4.65f},
+        { 4.25f, 1.32f, -4.65f},
+        {-4.65f, 1.32f,  4.25f}
+    };
+    for (const glm::vec3& columnPosition : columnPositions) {
+        draw(cube_, boxTransform(columnPosition, {0.34f, 3.0f, 0.34f}),
+             {0.34f, 0.39f, 0.45f});
+        draw(cube_, boxTransform({columnPosition.x, -0.08f, columnPosition.z},
+                                 {0.54f, 0.20f, 0.54f}),
+             {0.22f, 0.28f, 0.34f});
+        draw(cube_, boxTransform({columnPosition.x, 2.72f, columnPosition.z},
+                                 {0.50f, 0.20f, 0.50f}),
+             {0.22f, 0.28f, 0.34f});
+    }
+
+    // Compact rotating platform sized to the car footprint.
+    draw(cylinder_, turntable * boxTransform({0.0f, -0.06f, 0.0f}, {1.72f, 0.18f, 1.72f}),
          {0.055f, 0.065f, 0.08f});
-    draw(cylinder_, turntable * boxTransform({0.0f, -0.06f, 0.0f}, {4.5f, 0.18f, 4.5f}),
-         {0.055f, 0.065f, 0.08f});
-    draw(cylinder_, turntable * boxTransform({0.0f, 0.035f, 0.0f}, {4.28f, 0.035f, 4.28f}),
+    draw(cylinder_, turntable * boxTransform({0.0f, 0.035f, 0.0f}, {1.62f, 0.035f, 1.62f}),
          {0.27f, 0.31f, 0.35f});
 
     // Main body and cabin.
@@ -215,6 +236,15 @@ void AvtoVistaScene::render(GLint modelLocation, GLint colorLocation,
         drawCarBox({0.28f, 0.77f, side * 0.60f}, {0.16f, 0.08f, 0.12f},
                    {0.06f, 0.07f, 0.08f});
     }
+
+    // Small door handles on both sides, built from the existing cube mesh.
+    for (const float side : {-1.0f, 1.0f}) {
+        drawCarBox({-0.42f, 0.52f, side * 0.575f}, {0.18f, 0.035f, 0.025f},
+                   {0.58f, 0.62f, 0.66f});
+        drawCarBox({0.40f, 0.52f, side * 0.575f}, {0.18f, 0.035f, 0.025f},
+                   {0.58f, 0.62f, 0.66f});
+    }
+
     drawCarBox({0.48f, 0.77f, 0.0f}, {0.045f, 0.24f, 0.72f},
                {0.035f, 0.075f, 0.095f}, -0.28f);
     drawCarBox({-0.76f, 0.76f, 0.0f}, {0.045f, 0.22f, 0.72f},
@@ -237,7 +267,17 @@ void AvtoVistaScene::render(GLint modelLocation, GLint colorLocation,
         }
     }
 
-    // Headlights, tail lights, grille, and bumpers.
+    // A simple front grille with three horizontal slats.
+    drawCarBox({1.294f, 0.43f, 0.0f}, {0.035f, 0.14f, 0.32f},
+               {0.035f, 0.045f, 0.055f});
+    drawCarBox({1.316f, 0.385f, 0.0f}, {0.012f, 0.012f, 0.27f},
+               {0.48f, 0.53f, 0.58f});
+    drawCarBox({1.316f, 0.43f, 0.0f}, {0.012f, 0.012f, 0.27f},
+               {0.48f, 0.53f, 0.58f});
+    drawCarBox({1.316f, 0.475f, 0.0f}, {0.012f, 0.012f, 0.27f},
+               {0.48f, 0.53f, 0.58f});
+
+    // Headlights, tail lights, and bumpers.
     for (const float side : {-1.0f, 1.0f}) {
         drawCarBox({1.285f, 0.49f, side * 0.34f}, {0.04f, 0.105f, 0.19f},
                    {0.98f, 0.82f, 0.48f});
