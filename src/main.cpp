@@ -8,14 +8,12 @@
 #include "FpsCounter.h"
 #include "Lighting.h"
 #include "ControlHelpOverlay.h"
+#include "ShaderProgram.h"
 
 #include <array>
 #include <filesystem>
-#include <fstream>
+#include <exception>
 #include <iostream>
-#include <sstream>
-#include <string>
-#include <stdexcept>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -25,57 +23,6 @@
 #endif
 
 namespace {
-
-std::string readText(const std::filesystem::path& path) {
-    std::ifstream file(path, std::ios::binary);
-    if (!file) throw std::runtime_error("Cannot open shader: " + path.string());
-    std::ostringstream stream;
-    stream << file.rdbuf();
-    return stream.str();
-}
-
-GLuint compileShader(GLenum type, const std::string& source, const char* label) {
-    const GLuint shader = glCreateShader(type);
-    const char* data = source.c_str();
-    glShaderSource(shader, 1, &data, nullptr);
-    glCompileShader(shader);
-    GLint success = GL_FALSE;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (success == GL_TRUE) return shader;
-    GLint length = 0;
-    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
-    std::string log(static_cast<std::size_t>(length), '\0');
-    glGetShaderInfoLog(shader, length, nullptr, log.data());
-    std::cerr << label << " shader compilation failed:\n" << log << '\n';
-    glDeleteShader(shader);
-    return 0;
-}
-
-GLuint createProgram(const std::filesystem::path& shaderDir) {
-    const GLuint vertex = compileShader(GL_VERTEX_SHADER, readText(shaderDir / "scene.vert"), "Vertex");
-    const GLuint fragment = compileShader(GL_FRAGMENT_SHADER, readText(shaderDir / "scene.frag"), "Fragment");
-    if (!vertex || !fragment) {
-        if (vertex) glDeleteShader(vertex);
-        if (fragment) glDeleteShader(fragment);
-        return 0;
-    }
-    const GLuint program = glCreateProgram();
-    glAttachShader(program, vertex);
-    glAttachShader(program, fragment);
-    glLinkProgram(program);
-    glDeleteShader(vertex);
-    glDeleteShader(fragment);
-    GLint success = GL_FALSE;
-    glGetProgramiv(program, GL_LINK_STATUS, &success);
-    if (success == GL_TRUE) return program;
-    GLint length = 0;
-    glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
-    std::string log(static_cast<std::size_t>(length), '\0');
-    glGetProgramInfoLog(program, length, nullptr, log.data());
-    std::cerr << "Shader program link failed:\n" << log << '\n';
-    glDeleteProgram(program);
-    return 0;
-}
 
 std::array<Light, kLightCount> gLights = makeStudioLights();
 
