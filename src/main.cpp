@@ -5,6 +5,7 @@
 #include "AvtoVista.h"
 #include "CameraControls.h"
 #include "ConfiguratorControls.h"
+#include "FpsCounter.h"
 #include "Lighting.h"
 #include "ControlHelpOverlay.h"
 
@@ -93,7 +94,7 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(960, 640, "AutoVista - Orbit Camera Scene", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "AutoVista - Car Showroom", nullptr, nullptr);
     if (!window) {
         std::cerr << "Could not create an OpenGL 3.3 window.\n";
         glfwTerminate();
@@ -157,11 +158,19 @@ int main() {
     const GLint specularLocation = glGetUniformLocation(program, "uSpecularStrength");
     int width = 0, height = 0;
     double previousTime = glfwGetTime();
+    FpsCounter fpsCounter;
     while (glfwWindowShouldClose(window) == GLFW_FALSE) {
         glfwPollEvents();
         const double currentTime = glfwGetTime();
         const float deltaTime = static_cast<float>(currentTime - previousTime);
         previousTime = currentTime;
+
+        if (fpsCounter.update(currentTime)) {
+            const std::string title =
+                "AutoVista - Car Showroom | " +
+                std::to_string(fpsCounter.framesPerSecond()) + " FPS";
+            glfwSetWindowTitle(window, title.c_str());
+        }
         controls.update(deltaTime);
         configurator.update();
         controlHelp.update();
