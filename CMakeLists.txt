@@ -33,6 +33,7 @@ target_include_directories(glad PUBLIC third_party/glad/include)
 add_executable(AutoVista
     src/main.cpp
     src/ShaderProgram.cpp
+    src/FpsCounter.cpp
     src/AvtoVista.cpp
     src/OrbitCamera.cpp
     src/CameraControls.cpp
