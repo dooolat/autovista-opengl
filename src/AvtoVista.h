@@ -17,7 +17,8 @@ public:
     bool initialize();
     void update(float deltaTimeSeconds);
     void render(GLint modelLocation, GLint normalLocation, GLint colorLocation,
-                GLint texturedLocation, const glm::vec3& paintColor) const;
+                GLint texturedLocation, const glm::vec3& paintColor,
+                bool lampsEnabled) const;
     void destroy();
 
 private:

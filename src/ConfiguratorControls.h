@@ -13,6 +13,7 @@ struct ConfiguratorState {
     float specularStrength = 1.0f;
     bool glossy = true;
     bool turntablePaused = false;
+    bool lampsEnabled = true;
 };
 
 class ConfiguratorControls {
@@ -29,4 +30,5 @@ private:
     ConfiguratorState state_;
     bool matteKeyWasDown_ = false;
     bool pauseKeyWasDown_ = false;
+    bool lampToggleKeyWasDown_ = false;
 };

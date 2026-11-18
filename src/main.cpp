@@ -141,7 +141,7 @@ int main() {
         glUniform1f(specularLocation, state.specularStrength);
         uploadLights(program, gLights);
         scene.render(modelLocation, normalLocation, colorLocation, texturedLocation,
-                     state.paintColor);
+                     state.paintColor, state.lampsEnabled);
         controlHelp.render(width, height);
         glBindVertexArray(0);
         glfwSwapBuffers(window);
