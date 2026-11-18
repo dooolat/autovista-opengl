@@ -18,7 +18,7 @@ public:
     void update(float deltaTimeSeconds);
     void render(GLint modelLocation, GLint normalLocation, GLint colorLocation,
                 GLint texturedLocation, const glm::vec3& paintColor,
-                bool lampsEnabled) const;
+                bool lampsEnabled, int carVariant = 0) const;
     void destroy();
 
 private:
