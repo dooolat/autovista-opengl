@@ -1,5 +1,6 @@
 #version 330 core
 in vec3 vWorldPos;
+in vec3 vWorldNormal;
 in vec2 vTexCoord;
 out vec4 FragColor;
 
@@ -21,12 +22,8 @@ uniform float uSpecularStrength;
 uniform Light uLights[MAX_LIGHTS];
 
 void main() {
-    // The meshes have no normals yet, so build a face normal from screen-space
-    // derivatives of the world position. Replace with a real vertex normal
-    // once the car model is imported.
-    vec3 N = normalize(cross(dFdx(vWorldPos), dFdy(vWorldPos)));
+    vec3 N = normalize(vWorldNormal);
     vec3 V = normalize(uViewPos - vWorldPos);
-    if (dot(N, V) < 0.0) N = -N;
 
     vec3 baseColor = uUseTexture != 0 ? texture(uFloorTexture, vTexCoord).rgb : uColor;
     vec3 result = 0.15 * baseColor; // ambient
