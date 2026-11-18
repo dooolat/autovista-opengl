@@ -14,6 +14,7 @@ struct ConfiguratorState {
     bool glossy = true;
     bool turntablePaused = false;
     bool lampsEnabled = true;
+    int carVariant = 0;
 };
 
 class ConfiguratorControls {
@@ -31,4 +32,6 @@ private:
     bool matteKeyWasDown_ = false;
     bool pauseKeyWasDown_ = false;
     bool lampToggleKeyWasDown_ = false;
+    bool previousCarKeyWasDown_ = false;
+    bool nextCarKeyWasDown_ = false;
 };
