@@ -96,6 +96,7 @@ int main() {
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.72f, 0.75f, 0.78f, 1.0f);
     const GLint modelLocation = glGetUniformLocation(program, "uModel");
+    const GLint normalLocation = glGetUniformLocation(program, "uNormalMatrix");
     const GLint viewLocation = glGetUniformLocation(program, "uView");
     const GLint projectionLocation = glGetUniformLocation(program, "uProjection");
     const GLint colorLocation = glGetUniformLocation(program, "uColor");
@@ -139,7 +140,8 @@ int main() {
         glUniform1f(shininessLocation, state.shininess);
         glUniform1f(specularLocation, state.specularStrength);
         uploadLights(program, gLights);
-        scene.render(modelLocation, colorLocation, texturedLocation, state.paintColor);
+        scene.render(modelLocation, normalLocation, colorLocation, texturedLocation,
+                     state.paintColor);
         controlHelp.render(width, height);
         glBindVertexArray(0);
         glfwSwapBuffers(window);

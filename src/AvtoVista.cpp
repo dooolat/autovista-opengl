@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -15,6 +16,19 @@ struct MeshData {
     std::vector<std::uint32_t> indices;
 };
 
+constexpr unsigned int kVertexStride = 8;
+
+std::uint32_t appendVertex(MeshData& mesh, const glm::vec3& position,
+                           const glm::vec3& normal, float u = 0.0f, float v = 0.0f) {
+    const auto index = static_cast<std::uint32_t>(mesh.vertices.size() / kVertexStride);
+    mesh.vertices.insert(mesh.vertices.end(), {
+        position.x, position.y, position.z,
+        normal.x, normal.y, normal.z,
+        u, v
+    });
+    return index;
+}
+
 MeshData cylinderData(unsigned int segments = 64) {
     MeshData mesh;
     const float step = kTau / static_cast<float>(segments);
@@ -26,35 +40,28 @@ MeshData cylinderData(unsigned int segments = 64) {
         const float z0 = std::sin(a);
         const float x1 = std::cos(b);
         const float z1 = std::sin(b);
-        const auto first = static_cast<std::uint32_t>(mesh.vertices.size() / 3);
-
-        mesh.vertices.insert(mesh.vertices.end(), {
-            x0, -0.5f, z0, x0, 0.5f, z0,
-            x1, 0.5f, z1, x1, -0.5f, z1
-        });
+        const auto first = appendVertex(mesh, {x0, -0.5f, z0}, {x0, 0.0f, z0});
+        appendVertex(mesh, {x0, 0.5f, z0}, {x0, 0.0f, z0});
+        appendVertex(mesh, {x1, 0.5f, z1}, {x1, 0.0f, z1});
+        appendVertex(mesh, {x1, -0.5f, z1}, {x1, 0.0f, z1});
         mesh.indices.insert(mesh.indices.end(), {
             first, first + 1, first + 2,
             first, first + 2, first + 3
         });
     }
 
-    const auto center = static_cast<std::uint32_t>(mesh.vertices.size() / 3);
-    mesh.vertices.insert(mesh.vertices.end(), {0.0f, 0.5f, 0.0f, 0.0f, -0.5f, 0.0f});
-    const auto bottomCenter = center + 1;
-
     for (unsigned int segment = 0; segment < segments; ++segment) {
         const float a = static_cast<float>(segment) * step;
         const float b = static_cast<float>(segment + 1) * step;
-        const auto first = static_cast<std::uint32_t>(mesh.vertices.size() / 3);
-        mesh.vertices.insert(mesh.vertices.end(), {
-            std::cos(a), 0.5f, std::sin(a),
-            std::cos(b), 0.5f, std::sin(b),
-            std::cos(a), -0.5f, std::sin(a),
-            std::cos(b), -0.5f, std::sin(b)
-        });
+        const auto topCenter = appendVertex(mesh, {0.0f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f});
+        const auto topA = appendVertex(mesh, {std::cos(a), 0.5f, std::sin(a)}, {0.0f, 1.0f, 0.0f});
+        const auto topB = appendVertex(mesh, {std::cos(b), 0.5f, std::sin(b)}, {0.0f, 1.0f, 0.0f});
+        const auto bottomCenter = appendVertex(mesh, {0.0f, -0.5f, 0.0f}, {0.0f, -1.0f, 0.0f});
+        const auto bottomA = appendVertex(mesh, {std::cos(a), -0.5f, std::sin(a)}, {0.0f, -1.0f, 0.0f});
+        const auto bottomB = appendVertex(mesh, {std::cos(b), -0.5f, std::sin(b)}, {0.0f, -1.0f, 0.0f});
         mesh.indices.insert(mesh.indices.end(), {
-            center, first + 1, first,
-            bottomCenter, first + 2, first + 3
+            topCenter, topB, topA,
+            bottomCenter, bottomA, bottomB
         });
     }
 
@@ -66,29 +73,40 @@ MeshData floorData() {
     constexpr float extent = 5.0f;
     constexpr float textureRepeat = 8.0f;
     constexpr float y = -0.18f;
-    mesh.vertices = {
-        -extent, y, -extent, 0.0f, 0.0f,
-         extent, y, -extent, textureRepeat, 0.0f,
-         extent, y,  extent, textureRepeat, textureRepeat,
-        -extent, y,  extent, 0.0f, textureRepeat
-    };
+    appendVertex(mesh, {-extent, y, -extent}, {0.0f, 1.0f, 0.0f}, 0.0f, 0.0f);
+    appendVertex(mesh, { extent, y, -extent}, {0.0f, 1.0f, 0.0f}, textureRepeat, 0.0f);
+    appendVertex(mesh, { extent, y,  extent}, {0.0f, 1.0f, 0.0f}, textureRepeat, textureRepeat);
+    appendVertex(mesh, {-extent, y,  extent}, {0.0f, 1.0f, 0.0f}, 0.0f, textureRepeat);
     mesh.indices = {0, 2, 1, 0, 3, 2};
     return mesh;
 }
 
 MeshData cubeData() {
     MeshData mesh;
-    mesh.vertices = {
-        -0.5f, -0.5f, -0.5f,  0.5f, -0.5f, -0.5f,
-         0.5f,  0.5f, -0.5f, -0.5f,  0.5f, -0.5f,
-        -0.5f, -0.5f,  0.5f,  0.5f, -0.5f,  0.5f,
-         0.5f,  0.5f,  0.5f, -0.5f,  0.5f,  0.5f
+    const auto addFace = [&](const glm::vec3& normal, const glm::vec3& a,
+                             const glm::vec3& b, const glm::vec3& c,
+                             const glm::vec3& d) {
+        const auto first = appendVertex(mesh, a, normal);
+        appendVertex(mesh, b, normal);
+        appendVertex(mesh, c, normal);
+        appendVertex(mesh, d, normal);
+        mesh.indices.insert(mesh.indices.end(), {
+            first, first + 1, first + 2,
+            first, first + 2, first + 3
+        });
     };
-    mesh.indices = {
-        0, 2, 1, 0, 3, 2, 4, 5, 6, 4, 6, 7,
-        0, 1, 5, 0, 5, 4, 3, 7, 6, 3, 6, 2,
-        0, 4, 7, 0, 7, 3, 1, 2, 6, 1, 6, 5
-    };
+    addFace({0.0f, 0.0f, 1.0f}, {-0.5f,-0.5f, 0.5f}, {0.5f,-0.5f, 0.5f},
+            {0.5f,0.5f,0.5f}, {-0.5f,0.5f,0.5f});
+    addFace({0.0f, 0.0f,-1.0f}, {0.5f,-0.5f,-0.5f}, {-0.5f,-0.5f,-0.5f},
+            {-0.5f,0.5f,-0.5f}, {0.5f,0.5f,-0.5f});
+    addFace({1.0f, 0.0f, 0.0f}, {0.5f,-0.5f,0.5f}, {0.5f,-0.5f,-0.5f},
+            {0.5f,0.5f,-0.5f}, {0.5f,0.5f,0.5f});
+    addFace({-1.0f,0.0f,0.0f}, {-0.5f,-0.5f,-0.5f}, {-0.5f,-0.5f,0.5f},
+            {-0.5f,0.5f,0.5f}, {-0.5f,0.5f,-0.5f});
+    addFace({0.0f, 1.0f, 0.0f}, {-0.5f,0.5f,0.5f}, {0.5f,0.5f,0.5f},
+            {0.5f,0.5f,-0.5f}, {-0.5f,0.5f,-0.5f});
+    addFace({0.0f,-1.0f,0.0f}, {-0.5f,-0.5f,-0.5f}, {0.5f,-0.5f,-0.5f},
+            {0.5f,-0.5f,0.5f}, {-0.5f,-0.5f,0.5f});
     return mesh;
 }
 
@@ -104,10 +122,8 @@ glm::mat4 boxTransform(const glm::vec3& position, const glm::vec3& size,
 } // namespace
 
 bool AvtoVistaScene::Mesh::create(const std::vector<float>& vertices,
-                                  const std::vector<std::uint32_t>& indices,
-                                  unsigned int vertexStride) {
-    if (vertices.empty() || indices.empty() || vertexStride < 3 ||
-        vertices.size() % vertexStride != 0) return false;
+                                  const std::vector<std::uint32_t>& indices) {
+    if (vertices.empty() || indices.empty() || vertices.size() % kVertexStride != 0) return false;
 
     indexCount = static_cast<GLsizei>(indices.size());
     glGenVertexArrays(1, &vao);
@@ -122,14 +138,15 @@ bool AvtoVistaScene::Mesh::create(const std::vector<float>& vertices,
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
                  static_cast<GLsizeiptr>(indices.size() * sizeof(std::uint32_t)),
                  indices.data(), GL_STATIC_DRAW);
-    const GLsizei stride = static_cast<GLsizei>(vertexStride * sizeof(float));
+    const GLsizei stride = static_cast<GLsizei>(kVertexStride * sizeof(float));
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, nullptr);
     glEnableVertexAttribArray(0);
-    if (vertexStride >= 5) {
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride,
-                              reinterpret_cast<void*>(3 * sizeof(float)));
-        glEnableVertexAttribArray(1);
-    }
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride,
+                          reinterpret_cast<void*>(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride,
+                          reinterpret_cast<void*>(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
     glBindVertexArray(0);
     return vao != 0 && vbo != 0 && ebo != 0;
 }
@@ -153,7 +170,7 @@ bool AvtoVistaScene::initialize() {
     const MeshData floor = floorData();
     if (!cylinder_.create(cylinder.vertices, cylinder.indices) ||
         !cube_.create(cube.vertices, cube.indices) ||
-        !floor_.create(floor.vertices, floor.indices, 5) ||
+        !floor_.create(floor.vertices, floor.indices) ||
         !floorTexture_.initialize()) {
         destroy();
         return false;
@@ -167,14 +184,16 @@ void AvtoVistaScene::update(float deltaTimeSeconds) {
     }
 }
 
-void AvtoVistaScene::render(GLint modelLocation, GLint colorLocation,
-                            GLint texturedLocation,
+void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
+                            GLint colorLocation, GLint texturedLocation,
                             const glm::vec3& paintColor) const {
     const glm::mat4 identity(1.0f);
     const glm::mat4 turntable = glm::rotate(identity, angle_, glm::vec3(0.0f, 1.0f, 0.0f));
     const auto draw = [&](const Mesh& mesh, const glm::mat4& model, const glm::vec3& color) {
         glUniform1i(texturedLocation, GL_FALSE);
         glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+        const glm::mat3 normalMatrix = glm::inverseTranspose(glm::mat3(model));
+        glUniformMatrix3fv(normalLocation, 1, GL_FALSE, glm::value_ptr(normalMatrix));
         glUniform3fv(colorLocation, 1, glm::value_ptr(color));
         mesh.draw();
     };
@@ -190,6 +209,8 @@ void AvtoVistaScene::render(GLint modelLocation, GLint colorLocation,
     floorTexture_.bind(0);
     glUniform1i(texturedLocation, GL_TRUE);
     glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(identity));
+    const glm::mat3 floorNormalMatrix(1.0f);
+    glUniformMatrix3fv(normalLocation, 1, GL_FALSE, glm::value_ptr(floorNormalMatrix));
     glUniform3fv(colorLocation, 1, glm::value_ptr(glm::vec3(1.0f)));
     floor_.draw();
 
