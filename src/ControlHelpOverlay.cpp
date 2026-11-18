@@ -121,6 +121,8 @@ Glyph glyphFor(char character) {
     case '8': return {0x0E, 0x11, 0x11, 0x0E, 0x11, 0x11, 0x0E};
     case '9': return {0x0E, 0x11, 0x11, 0x0F, 0x01, 0x01, 0x0E};
     case '-': return {0x00, 0x00, 0x00, 0x0E, 0x00, 0x00, 0x00};
+    case '<': return {0x02, 0x04, 0x08, 0x10, 0x08, 0x04, 0x02};
+    case '>': return {0x08, 0x04, 0x02, 0x01, 0x02, 0x04, 0x08};
     default: return {};
     }
 }
@@ -198,11 +200,12 @@ void ControlHelpOverlay::update() {
 void ControlHelpOverlay::render(int framebufferWidth, int framebufferHeight) const {
     if (!visible_ || framebufferWidth < 320 || framebufferHeight < 240 || program_ == 0) return;
 
-    const std::array<std::string, 11> lines = {
+    const std::array<std::string, 12> lines = {
         "H TO SHOW OR HIDE",
         "MOUSE DRAG TO ORBIT",
         "WHEEL TO ZOOM",
-        "WASD OR ARROWS ORBIT",
+        "ARROW KEYS ORBIT",
+        "< OR > SELECT CAR",
         "Q OR E TO ZOOM",
         "1-3 TOGGLE LIGHTS",
         "4 TOGGLE CAR LIGHTS",

@@ -28,6 +28,18 @@ void ConfiguratorControls::update() {
         state_.lampsEnabled = !state_.lampsEnabled;
     lampToggleKeyWasDown_ = lampToggleKeyDown;
 
+    const bool shiftDown = keyDown(window_, GLFW_KEY_LEFT_SHIFT) ||
+                           keyDown(window_, GLFW_KEY_RIGHT_SHIFT);
+    const bool previousCarKeyDown = shiftDown && keyDown(window_, GLFW_KEY_COMMA);
+    if (previousCarKeyDown && !previousCarKeyWasDown_)
+        state_.carVariant = (state_.carVariant + 1) % 2;
+    previousCarKeyWasDown_ = previousCarKeyDown;
+
+    const bool nextCarKeyDown = shiftDown && keyDown(window_, GLFW_KEY_PERIOD);
+    if (nextCarKeyDown && !nextCarKeyWasDown_)
+        state_.carVariant = (state_.carVariant + 1) % 2;
+    nextCarKeyWasDown_ = nextCarKeyDown;
+
     const bool matteKeyDown = keyDown(window_, GLFW_KEY_M);
     if (matteKeyDown && !matteKeyWasDown_) setFinish(!state_.glossy);
     matteKeyWasDown_ = matteKeyDown;
