@@ -200,7 +200,7 @@ void ControlHelpOverlay::update() {
 void ControlHelpOverlay::render(int framebufferWidth, int framebufferHeight) const {
     if (!visible_ || framebufferWidth < 320 || framebufferHeight < 240 || program_ == 0) return;
 
-    const std::array<std::string, 12> lines = {
+    const std::array<std::string, 14> lines = {
         "H TO SHOW OR HIDE",
         "MOUSE DRAG TO ORBIT",
         "WHEEL TO ZOOM",
@@ -211,6 +211,8 @@ void ControlHelpOverlay::render(int framebufferWidth, int framebufferHeight) con
         "4 TOGGLE CAR LIGHTS",
         "5-8 SELECT PAINT",
         "M MATTE OR GLOSSY",
+        "S SMOOTH SHADING",
+        "F FLAT SHADING",
         "SPACE PAUSE SPIN",
         "ESC QUIT"
     };
