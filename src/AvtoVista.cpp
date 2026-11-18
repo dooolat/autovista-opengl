@@ -186,7 +186,7 @@ void AvtoVistaScene::update(float deltaTimeSeconds) {
 
 void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
                             GLint colorLocation, GLint texturedLocation,
-                            const glm::vec3& paintColor) const {
+                            const glm::vec3& paintColor, bool lampsEnabled) const {
     const glm::mat4 identity(1.0f);
     const glm::mat4 turntable = glm::rotate(identity, angle_, glm::vec3(0.0f, 1.0f, 0.0f));
     const auto draw = [&](const Mesh& mesh, const glm::mat4& model, const glm::vec3& color) {
@@ -299,11 +299,17 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
                {0.48f, 0.53f, 0.58f});
 
     // Headlights, tail lights, and bumpers.
+    const glm::vec3 headlightColor = lampsEnabled
+        ? glm::vec3(0.98f, 0.96f, 0.82f)
+        : glm::vec3(0.12f, 0.12f, 0.10f);
+    const glm::vec3 tailLightColor = lampsEnabled
+        ? glm::vec3(0.55f, 0.025f, 0.02f)
+        : glm::vec3(0.10f, 0.018f, 0.015f);
     for (const float side : {-1.0f, 1.0f}) {
         drawCarBox({1.285f, 0.49f, side * 0.34f}, {0.04f, 0.105f, 0.19f},
-                   {0.98f, 0.82f, 0.48f});
+                   headlightColor);
         drawCarBox({-1.285f, 0.47f, side * 0.35f}, {0.04f, 0.11f, 0.18f},
-                   {0.72f, 0.035f, 0.025f});
+                   tailLightColor);
     }
     drawCarBox({1.30f, 0.34f, 0.0f}, {0.06f, 0.15f, 0.48f},
                {0.045f, 0.052f, 0.06f});
