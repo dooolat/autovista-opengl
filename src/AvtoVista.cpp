@@ -186,7 +186,8 @@ void AvtoVistaScene::update(float deltaTimeSeconds) {
 
 void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
                             GLint colorLocation, GLint texturedLocation,
-                            const glm::vec3& paintColor, bool lampsEnabled) const {
+                            const glm::vec3& paintColor, bool lampsEnabled,
+                            int carVariant) const {
     const glm::mat4 identity(1.0f);
     const glm::mat4 turntable = glm::rotate(identity, angle_, glm::vec3(0.0f, 1.0f, 0.0f));
     const auto draw = [&](const Mesh& mesh, const glm::mat4& model, const glm::vec3& color) {
@@ -204,6 +205,7 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
     const auto drawPaintedCarBox = [&](const glm::vec3& position, const glm::vec3& size) {
         draw(cube_, turntable * boxTransform(position, size), paintColor);
     };
+    const bool alternateCar = carVariant == 1;
 
     // Textured showroom floor. Keep it separate so the car meshes stay unchanged.
     floorTexture_.bind(0);
@@ -244,8 +246,19 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
          {0.27f, 0.31f, 0.35f});
 
     // Main body and cabin.
-    drawPaintedCarBox({0.0f, 0.43f, 0.0f}, {2.55f, 0.43f, 1.12f});
-    drawPaintedCarBox({-0.18f, 0.77f, 0.0f}, {1.35f, 0.34f, 0.91f});
+    drawPaintedCarBox({0.0f, alternateCar ? 0.48f : 0.43f, 0.0f},
+                      alternateCar ? glm::vec3(2.30f, 0.52f, 1.28f)
+                                   : glm::vec3(2.55f, 0.43f, 1.12f));
+    drawPaintedCarBox({alternateCar ? -0.10f : -0.18f,
+                       alternateCar ? 0.91f : 0.77f, 0.0f},
+                      alternateCar ? glm::vec3(1.48f, 0.48f, 1.04f)
+                                   : glm::vec3(1.35f, 0.34f, 0.91f));
+    if (alternateCar) {
+        drawCarBox({-0.10f, 1.18f, -0.45f}, {1.40f, 0.06f, 0.05f},
+                   {0.06f, 0.07f, 0.08f});
+        drawCarBox({-0.10f, 1.18f, 0.45f}, {1.40f, 0.06f, 0.05f},
+                   {0.06f, 0.07f, 0.08f});
+    }
 
     // Dark windows and sloped front and rear glass.
     for (const float side : {-1.0f, 1.0f}) {
@@ -273,7 +286,11 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
 
     // Four tires with metallic hubs.
     for (const float side : {-1.0f, 1.0f}) {
-        for (const float x : {-0.78f, 0.78f}) {
+        const float wheelPositions[] = {
+            alternateCar ? -0.72f : -0.78f,
+            alternateCar ? 0.72f : 0.78f
+        };
+        for (const float x : wheelPositions) {
             const glm::mat4 tire = turntable *
                 glm::translate(identity, {x, 0.34f, side * 0.565f}) *
                 glm::rotate(identity, 0.5f * kPi, {1.0f, 0.0f, 0.0f}) *
