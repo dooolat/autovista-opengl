@@ -14,6 +14,7 @@
 #include <filesystem>
 #include <exception>
 #include <iostream>
+#include <string>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -24,11 +25,13 @@
 
 namespace {
 
-std::array<Light, kLightCount> gLights = makeStudioLights();
+    std::array<Light, kLightCount> gLights = makeStudioLights();
 
-void framebufferSizeCallback(GLFWwindow*, int width, int height) {
-    glViewport(0, 0, width, height);
-}
+    bool gSmoothShading = true;
+
+    void framebufferSizeCallback(GLFWwindow*, int width, int height) {
+        glViewport(0, 0, width, height);
+    }
 
 } // namespace
 
@@ -37,18 +40,23 @@ int main() {
         std::cerr << "GLFW initialization failed.\n";
         return 1;
     }
+
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "AutoVista - Car Showroom", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(
+        1280, 720, "AutoVista - Car Showroom", nullptr, nullptr);
+
     if (!window) {
         std::cerr << "Could not create an OpenGL 3.3 window.\n";
         glfwTerminate();
         return 1;
     }
+
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
+
     if (!gladLoadGL(reinterpret_cast<GLADloadfunc>(glfwGetProcAddress))) {
         std::cerr << "GLAD initialization failed.\n";
         glfwDestroyWindow(window);
@@ -57,21 +65,40 @@ int main() {
     }
 
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+
     glfwSetKeyCallback(window, [](GLFWwindow* current, int key, int, int action, int) {
-        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
             glfwSetWindowShouldClose(current, GLFW_TRUE);
-        if (action == GLFW_PRESS && key >= GLFW_KEY_1 && key < GLFW_KEY_1 + kLightCount) {
-            Light& light = gLights[static_cast<std::size_t>(key - GLFW_KEY_1)];
+        }
+
+        if (action == GLFW_PRESS &&
+            key >= GLFW_KEY_1 &&
+            key < GLFW_KEY_1 + kLightCount) {
+
+            Light& light = gLights[
+                static_cast<std::size_t>(key - GLFW_KEY_1)];
+
             light.enabled = !light.enabled;
         }
-    });
+
+        if (action == GLFW_PRESS && key == GLFW_KEY_S) {
+            gSmoothShading = true;
+        }
+
+        if (action == GLFW_PRESS && key == GLFW_KEY_F) {
+            gSmoothShading = false;
+        }
+        });
 
     GLuint program = 0;
+
     try {
         program = createProgram(std::filesystem::path(AUTOVISTA_SHADER_DIR));
-    } catch (const std::exception& error) {
+    }
+    catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
     }
+
     if (!program) {
         glfwDestroyWindow(window);
         glfwTerminate();
@@ -83,8 +110,12 @@ int main() {
     ConfiguratorControls configurator(window);
     ControlHelpOverlay controlHelp(window);
     AvtoVistaScene scene;
-    if (!scene.initialize() || !controlHelp.initialize(std::filesystem::path(AUTOVISTA_SHADER_DIR))) {
+
+    if (!scene.initialize() ||
+        !controlHelp.initialize(std::filesystem::path(AUTOVISTA_SHADER_DIR))) {
+
         std::cerr << "Could not create scene geometry.\n";
+
         controlHelp.destroy();
         glDeleteProgram(program);
         controls.detach();
@@ -95,56 +126,107 @@ int main() {
 
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.72f, 0.75f, 0.78f, 1.0f);
-    const GLint modelLocation = glGetUniformLocation(program, "uModel");
-    const GLint normalLocation = glGetUniformLocation(program, "uNormalMatrix");
-    const GLint viewLocation = glGetUniformLocation(program, "uView");
-    const GLint projectionLocation = glGetUniformLocation(program, "uProjection");
-    const GLint colorLocation = glGetUniformLocation(program, "uColor");
-    const GLint texturedLocation = glGetUniformLocation(program, "uUseTexture");
-    const HeadlightUniforms headlights{
-        glGetUniformLocation(program, "uHeadlightsEnabled"),
-        glGetUniformLocation(program, "uHeadlightPositions[0]"),
-        glGetUniformLocation(program, "uHeadlightDirection")
-    };
-    const GLint paintMaterialLocation = glGetUniformLocation(program, "uPainted");
-    const GLint viewPosLocation = glGetUniformLocation(program, "uViewPos");
-    const GLint shininessLocation = glGetUniformLocation(program, "uShininess");
-    const GLint specularLocation = glGetUniformLocation(program, "uSpecularStrength");
-    int width = 0, height = 0;
+const GLint modelLocation =
+    glGetUniformLocation(program, "uModel");
+const GLint normalLocation =
+    glGetUniformLocation(program, "uNormalMatrix");
+const GLint viewLocation =
+    glGetUniformLocation(program, "uView");
+const GLint projectionLocation =
+    glGetUniformLocation(program, "uProjection");
+const GLint colorLocation =
+    glGetUniformLocation(program, "uColor");
+const GLint texturedLocation =
+    glGetUniformLocation(program, "uUseTexture");
+
+const HeadlightUniforms headlights{
+    glGetUniformLocation(program, "uHeadlightsEnabled"),
+    glGetUniformLocation(program, "uHeadlightPositions[0]"),
+    glGetUniformLocation(program, "uHeadlightDirection")
+};
+const GLint paintMaterialLocation =
+    glGetUniformLocation(program, "uPainted");
+
+const GLint viewPosLocation =
+    glGetUniformLocation(program, "uViewPos");
+const GLint shininessLocation =
+    glGetUniformLocation(program, "uShininess");
+const GLint specularLocation =
+    glGetUniformLocation(program, "uSpecularStrength");
+const GLint smoothShadingLocation =
+    glGetUniformLocation(program, "uSmoothShading");
+
+int width = 0;
+int height = 0;
     double previousTime = glfwGetTime();
+
     FpsCounter fpsCounter;
+
     while (glfwWindowShouldClose(window) == GLFW_FALSE) {
         glfwPollEvents();
+
         const double currentTime = glfwGetTime();
-        const float deltaTime = static_cast<float>(currentTime - previousTime);
+
+        const float deltaTime =
+            static_cast<float>(currentTime - previousTime);
+
         previousTime = currentTime;
 
         if (fpsCounter.update(currentTime)) {
             const std::string title =
                 "AutoVista - Car Showroom | " +
                 std::to_string(fpsCounter.framesPerSecond()) + " FPS";
+
             glfwSetWindowTitle(window, title.c_str());
         }
+
         controls.update(deltaTime);
         configurator.update();
         controlHelp.update();
+
         const ConfiguratorState& state = configurator.state();
-        if (!state.turntablePaused) scene.update(deltaTime);
+
+        if (!state.turntablePaused) {
+            scene.update(deltaTime);
+        }
 
         glfwGetFramebufferSize(window, &width, &height);
-        if (width <= 0 || height <= 0) continue;
+
+        if (width <= 0 || height <= 0) {
+            continue;
+        }
+
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         glUseProgram(program);
+
         const glm::mat4 view = camera.viewMatrix();
+
         const glm::mat4 projection = glm::perspective(
-            glm::radians(45.0f), static_cast<float>(width) / static_cast<float>(height),
-            0.1f, 100.0f);
-        glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
-        glUniform3fv(viewPosLocation, 1, glm::value_ptr(camera.position()));
+            glm::radians(45.0f),
+            static_cast<float>(width) / static_cast<float>(height),
+            0.1f,
+            100.0f
+        );
+
+        glUniformMatrix4fv(
+            viewLocation, 1, GL_FALSE, glm::value_ptr(view));
+
+        glUniformMatrix4fv(
+            projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
+
+        glUniform3fv(
+            viewPosLocation, 1, glm::value_ptr(camera.position()));
+
         glUniform1f(shininessLocation, state.shininess);
         glUniform1f(specularLocation, state.specularStrength);
+
+        glUniform1i(
+            smoothShadingLocation,
+            gSmoothShading ? 1 : 0
+        );
+
         uploadLights(program, gLights);
         scene.render(modelLocation, normalLocation, colorLocation, texturedLocation, paintMaterialLocation,
                      headlights, state.paintColor, state.lampsEnabled, state.carVariant);
@@ -158,9 +240,13 @@ int main() {
 
     scene.destroy();
     controlHelp.destroy();
+
     glDeleteProgram(program);
+
     controls.detach();
+
     glfwDestroyWindow(window);
     glfwTerminate();
+
     return 0;
 }

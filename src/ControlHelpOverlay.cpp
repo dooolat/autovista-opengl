@@ -209,7 +209,7 @@ void ControlHelpOverlay::render(int framebufferWidth, int framebufferHeight,
     const std::string reflections = state.reflectionsEnabled ? "ON" : "OFF";
     const std::string car = carNames[static_cast<std::size_t>(std::clamp(state.carVariant, 0, 2))];
     const std::string paint = paintNames[static_cast<std::size_t>(std::clamp(state.paintPreset, 5, 8))];
-    const std::array<std::string, 13> lines = {
+    const std::array<std::string, 15> lines = {
         "H SHOW OR HIDE",
         "MOUSE DRAG ORBIT",
         "WHEEL TO ZOOM",
@@ -222,6 +222,8 @@ void ControlHelpOverlay::render(int framebufferWidth, int framebufferHeight,
         std::string("4 CAR LIGHTS ") + (state.lampsEnabled ? "ON" : "OFF"),
         "5-8 PAINT " + paint,
         "M FINISH " + finish,
+        "S SMOOTH SHADING",
+        "F FLAT SHADING",
         "SPACE SPIN " + spin,
         "9 REFLECTIONS " + reflections,
         "ESC QUIT"

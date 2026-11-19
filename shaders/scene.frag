@@ -1,3 +1,4 @@
+
 #version 330 core
 in vec3 vWorldPos;
 in vec3 vWorldNormal;
@@ -21,10 +22,14 @@ uniform int uUseTexture;
 uniform vec3  uViewPos;
 uniform float uShininess;
 uniform float uSpecularStrength;
+uniform int uSmoothShading;
 uniform Light uLights[MAX_LIGHTS];
 
 void main() {
-    vec3 N = normalize(vWorldNormal);
+    vec3 N = uSmoothShading != 0
+        ? normalize(vWorldNormal)
+        : normalize(cross(dFdx(vWorldPos), dFdy(vWorldPos)));
+
     vec3 V = normalize(uViewPos - vWorldPos);
 
     vec3 baseColor = uUseTexture != 0 ? texture(uFloorTexture, vTexCoord).rgb : uColor;
