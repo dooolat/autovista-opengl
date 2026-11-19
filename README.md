@@ -30,3 +30,7 @@ or Q/E to zoom. Press Shift+comma (`<`) or Shift+period (`>`) to switch car
 models, 1-3 to toggle studio lights, 4 to toggle the car lamps, 5-8 to choose
 paint, M to switch matte or glossy finish, and Space to pause or resume the
 turntable. Press H to show or hide controls and Esc to close.
+
+## AI use note
+
+OpenAI Codex assisted with implementing the paint-finish isolation in the scene renderer and fragment shader.

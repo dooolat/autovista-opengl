@@ -185,7 +185,7 @@ void AvtoVistaScene::update(float deltaTimeSeconds) {
 }
 
 void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
-                            GLint colorLocation, GLint texturedLocation,
+                            GLint colorLocation, GLint texturedLocation, GLint paintMaterialLocation,
                             const glm::vec3& paintColor, bool lampsEnabled,
                             int carVariant) const {
     const glm::mat4 identity(1.0f);
@@ -208,6 +208,7 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
     const bool alternateCar = carVariant == 1;
 
     // Textured showroom floor. Keep it separate so the car meshes stay unchanged.
+    glUniform1i(paintMaterialLocation, GL_FALSE);
     floorTexture_.bind(0);
     glUniform1i(texturedLocation, GL_TRUE);
     glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(identity));
@@ -245,7 +246,8 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
     draw(cylinder_, turntable * boxTransform({0.0f, 0.035f, 0.0f}, {1.62f, 0.035f, 1.62f}),
          {0.27f, 0.31f, 0.35f});
 
-    // Main body and cabin.
+    // Only the painted body and cabin use the selected finish.
+    glUniform1i(paintMaterialLocation, GL_TRUE);
     drawPaintedCarBox({0.0f, alternateCar ? 0.48f : 0.43f, 0.0f},
                       alternateCar ? glm::vec3(2.30f, 0.52f, 1.28f)
                                    : glm::vec3(2.55f, 0.43f, 1.12f));
@@ -253,6 +255,7 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
                        alternateCar ? 0.91f : 0.77f, 0.0f},
                       alternateCar ? glm::vec3(1.48f, 0.48f, 1.04f)
                                    : glm::vec3(1.35f, 0.34f, 0.91f));
+    glUniform1i(paintMaterialLocation, GL_FALSE);
     if (alternateCar) {
         drawCarBox({-0.10f, 1.18f, -0.45f}, {1.40f, 0.06f, 0.05f},
                    {0.06f, 0.07f, 0.08f});

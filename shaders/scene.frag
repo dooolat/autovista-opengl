@@ -17,6 +17,7 @@ uniform vec3  uColor;
 uniform sampler2D uFloorTexture;
 uniform int uUseTexture;
 uniform vec3  uViewPos;
+uniform bool uPainted;
 uniform float uShininess;
 uniform float uSpecularStrength;
 uniform Light uLights[MAX_LIGHTS];
@@ -28,6 +29,9 @@ void main() {
     vec3 baseColor = uUseTexture != 0 ? texture(uFloorTexture, vTexCoord).rgb : uColor;
     vec3 result = 0.15 * baseColor; // ambient
 
+    float shininess = uPainted ? uShininess : 24.0;
+    float specularStrength = uPainted ? uSpecularStrength : 0.16;
+
     for (int i = 0; i < MAX_LIGHTS; ++i) {
         if (uLights[i].enabled == 0) continue;
 
@@ -37,11 +41,11 @@ void main() {
         vec3  H       = normalize(L + V);
 
         float diff = max(dot(N, L), 0.0);
-        float spec = (diff > 0.0) ? pow(max(dot(N, H), 0.0), uShininess) : 0.0;
+        float spec = (diff > 0.0) ? pow(max(dot(N, H), 0.0), shininess) : 0.0;
         float atten = 1.0 / (1.0 + 0.045 * dist + 0.0075 * dist * dist);
 
         vec3 lightCol = uLights[i].color * uLights[i].intensity;
-        result += atten * lightCol * (diff * baseColor + uSpecularStrength * spec);
+        result += atten * lightCol * (diff * baseColor + specularStrength * spec);
     }
 
     FragColor = vec4(result, 1.0);
