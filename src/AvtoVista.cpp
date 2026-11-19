@@ -185,11 +185,28 @@ void AvtoVistaScene::update(float deltaTimeSeconds) {
 }
 
 void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
-                            GLint colorLocation, GLint texturedLocation,
+                            GLint colorLocation, GLint texturedLocation, GLint paintMaterialLocation,
+                const HeadlightUniforms& headlights,
                             const glm::vec3& paintColor, bool lampsEnabled,
                             int carVariant) const {
     const glm::mat4 identity(1.0f);
     const glm::mat4 turntable = glm::rotate(identity, angle_, glm::vec3(0.0f, 1.0f, 0.0f));
+    const glm::vec3 lampCenters[] = {{1.285f, 0.49f, -0.34f}, {1.285f, 0.49f, 0.34f}};
+    glUniform1i(headlights.enabled, lampsEnabled);
+    if (lampsEnabled) {
+        float positions[6];
+        for (int i = 0; i < 2; ++i) {
+            const glm::vec3 lensFront = lampCenters[i] + glm::vec3(0.025f, 0.0f, 0.0f);
+            const glm::vec4 world = turntable * glm::vec4(lensFront, 1.0f);
+            positions[3 * i] = world.x;
+            positions[3 * i + 1] = world.y;
+            positions[3 * i + 2] = world.z;
+        }
+        const glm::vec3 direction = glm::normalize(glm::mat3(turntable) * glm::vec3(1.0f, -0.18f, 0.0f));
+        glUniform3fv(headlights.positions, 2, positions);
+        glUniform3fv(headlights.direction, 1, glm::value_ptr(direction));
+    }
+
     const auto draw = [&](const Mesh& mesh, const glm::mat4& model, const glm::vec3& color) {
         glUniform1i(texturedLocation, GL_FALSE);
         glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
@@ -208,6 +225,7 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
     const bool alternateCar = carVariant == 1;
 
     // Textured showroom floor. Keep it separate so the car meshes stay unchanged.
+    glUniform1i(paintMaterialLocation, GL_FALSE);
     floorTexture_.bind(0);
     glUniform1i(texturedLocation, GL_TRUE);
     glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(identity));
@@ -245,7 +263,8 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
     draw(cylinder_, turntable * boxTransform({0.0f, 0.035f, 0.0f}, {1.62f, 0.035f, 1.62f}),
          {0.27f, 0.31f, 0.35f});
 
-    // Main body and cabin.
+    // Only the painted body and cabin use the selected finish.
+    glUniform1i(paintMaterialLocation, GL_TRUE);
     drawPaintedCarBox({0.0f, alternateCar ? 0.48f : 0.43f, 0.0f},
                       alternateCar ? glm::vec3(2.30f, 0.52f, 1.28f)
                                    : glm::vec3(2.55f, 0.43f, 1.12f));
@@ -253,6 +272,7 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
                        alternateCar ? 0.91f : 0.77f, 0.0f},
                       alternateCar ? glm::vec3(1.48f, 0.48f, 1.04f)
                                    : glm::vec3(1.35f, 0.34f, 0.91f));
+    glUniform1i(paintMaterialLocation, GL_FALSE);
     if (alternateCar) {
         drawCarBox({-0.10f, 1.18f, -0.45f}, {1.40f, 0.06f, 0.05f},
                    {0.06f, 0.07f, 0.08f});
@@ -322,9 +342,9 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
     const glm::vec3 tailLightColor = lampsEnabled
         ? glm::vec3(0.55f, 0.025f, 0.02f)
         : glm::vec3(0.10f, 0.018f, 0.015f);
+    for (const auto& center : lampCenters)
+        drawCarBox(center, {0.04f, 0.105f, 0.19f}, headlightColor);
     for (const float side : {-1.0f, 1.0f}) {
-        drawCarBox({1.285f, 0.49f, side * 0.34f}, {0.04f, 0.105f, 0.19f},
-                   headlightColor);
         drawCarBox({-1.285f, 0.47f, side * 0.35f}, {0.04f, 0.11f, 0.18f},
                    tailLightColor);
     }
