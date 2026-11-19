@@ -148,7 +148,10 @@ int main() {
         uploadLights(program, gLights);
         scene.render(modelLocation, normalLocation, colorLocation, texturedLocation, paintMaterialLocation,
                      headlights, state.paintColor, state.lampsEnabled, state.carVariant);
-        controlHelp.render(width, height);
+        const std::array<bool, kLightCount> studioLightsEnabled = {
+            gLights[0].enabled, gLights[1].enabled, gLights[2].enabled
+        };
+        controlHelp.render(width, height, state, studioLightsEnabled);
         glBindVertexArray(0);
         glfwSwapBuffers(window);
     }

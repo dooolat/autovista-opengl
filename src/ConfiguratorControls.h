@@ -14,12 +14,16 @@ struct ConfiguratorState {
     bool glossy = true;
     bool turntablePaused = false;
     bool lampsEnabled = true;
+    bool reflectionsEnabled = true;
     int carVariant = 0;
+    int paintPreset = 5;
 };
 
 class ConfiguratorControls {
 public:
-    explicit ConfiguratorControls(GLFWwindow* window) : window_(window) {}
+    explicit ConfiguratorControls(GLFWwindow* window) : window_(window) {
+        if (window_ != nullptr) glfwSetInputMode(window_, GLFW_STICKY_KEYS, GLFW_TRUE);
+    }
 
     void update();
     const ConfiguratorState& state() const noexcept { return state_; }
@@ -32,6 +36,7 @@ private:
     bool matteKeyWasDown_ = false;
     bool pauseKeyWasDown_ = false;
     bool lampToggleKeyWasDown_ = false;
+    bool reflectionToggleKeyWasDown_ = false;
     bool previousCarKeyWasDown_ = false;
     bool nextCarKeyWasDown_ = false;
 };

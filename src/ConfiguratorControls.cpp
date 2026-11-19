@@ -18,26 +18,41 @@ void ConfiguratorControls::update() {
     if (window_ == nullptr) return;
 
     // 1-3 toggle studio lights; 4 toggles the car lamps; 5-8 select paint presets.
-    if (keyDown(window_, GLFW_KEY_5)) state_.paintColor = {0.88f, 0.035f, 0.055f};
-    if (keyDown(window_, GLFW_KEY_6)) state_.paintColor = {0.035f, 0.26f, 0.92f};
-    if (keyDown(window_, GLFW_KEY_7)) state_.paintColor = {0.98f, 0.62f, 0.025f};
-    if (keyDown(window_, GLFW_KEY_8)) state_.paintColor = {0.045f, 0.46f, 0.19f};
+    if (keyDown(window_, GLFW_KEY_5)) {
+        state_.paintPreset = 5;
+        state_.paintColor = {0.88f, 0.035f, 0.055f};
+    }
+    if (keyDown(window_, GLFW_KEY_6)) {
+        state_.paintPreset = 6;
+        state_.paintColor = {0.035f, 0.26f, 0.92f};
+    }
+    if (keyDown(window_, GLFW_KEY_7)) {
+        state_.paintPreset = 7;
+        state_.paintColor = {0.98f, 0.62f, 0.025f};
+    }
+    if (keyDown(window_, GLFW_KEY_8)) {
+        state_.paintPreset = 8;
+        state_.paintColor = {0.045f, 0.46f, 0.19f};
+    }
 
     const bool lampToggleKeyDown = keyDown(window_, GLFW_KEY_4);
     if (lampToggleKeyDown && !lampToggleKeyWasDown_)
         state_.lampsEnabled = !state_.lampsEnabled;
     lampToggleKeyWasDown_ = lampToggleKeyDown;
 
-    const bool shiftDown = keyDown(window_, GLFW_KEY_LEFT_SHIFT) ||
-                           keyDown(window_, GLFW_KEY_RIGHT_SHIFT);
-    const bool previousCarKeyDown = shiftDown && keyDown(window_, GLFW_KEY_COMMA);
+    const bool reflectionToggleKeyDown = keyDown(window_, GLFW_KEY_9);
+    if (reflectionToggleKeyDown && !reflectionToggleKeyWasDown_)
+        state_.reflectionsEnabled = !state_.reflectionsEnabled;
+    reflectionToggleKeyWasDown_ = reflectionToggleKeyDown;
+
+    const bool previousCarKeyDown = keyDown(window_, GLFW_KEY_COMMA);
     if (previousCarKeyDown && !previousCarKeyWasDown_)
-        state_.carVariant = (state_.carVariant + 1) % 2;
+        state_.carVariant = (state_.carVariant + 1) % 3;
     previousCarKeyWasDown_ = previousCarKeyDown;
 
-    const bool nextCarKeyDown = shiftDown && keyDown(window_, GLFW_KEY_PERIOD);
+    const bool nextCarKeyDown = keyDown(window_, GLFW_KEY_PERIOD);
     if (nextCarKeyDown && !nextCarKeyWasDown_)
-        state_.carVariant = (state_.carVariant + 1) % 2;
+        state_.carVariant = (state_.carVariant + 1) % 3;
     nextCarKeyWasDown_ = nextCarKeyDown;
 
     const bool matteKeyDown = keyDown(window_, GLFW_KEY_M);
