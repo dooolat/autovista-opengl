@@ -186,9 +186,10 @@ void AvtoVistaScene::update(float deltaTimeSeconds) {
 
 void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
                             GLint colorLocation, GLint texturedLocation, GLint paintMaterialLocation,
-                const HeadlightUniforms& headlights,
+                            GLint reflectivityLocation,
+                            const HeadlightUniforms& headlights,
                             const glm::vec3& paintColor, bool lampsEnabled,
-                            int carVariant) const {
+                            bool reflectionsEnabled, int carVariant) const {
     const glm::mat4 identity(1.0f);
     const glm::mat4 turntable = glm::rotate(identity, angle_, glm::vec3(0.0f, 1.0f, 0.0f));
     const glm::vec3 lampCenters[] = {{1.285f, 0.49f, -0.34f}, {1.285f, 0.49f, 0.34f}};
@@ -220,13 +221,16 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
         draw(cube_, turntable * boxTransform(position, size, zRotation), color);
     };
     const auto drawPaintedCarBox = [&](const glm::vec3& position, const glm::vec3& size) {
+        glUniform1f(reflectivityLocation, reflectionsEnabled ? 0.22f : 0.0f);
         draw(cube_, turntable * boxTransform(position, size), paintColor);
+        glUniform1f(reflectivityLocation, 0.0f);
     };
     const bool alternateCar = carVariant == 1;
 
     // Textured showroom floor. Keep it separate so the car meshes stay unchanged.
     glUniform1i(paintMaterialLocation, GL_FALSE);
     floorTexture_.bind(0);
+    environmentMap_.bind(1);
     glUniform1i(texturedLocation, GL_TRUE);
     glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(identity));
     const glm::mat3 floorNormalMatrix(1.0f);

@@ -138,6 +138,10 @@ const GLint colorLocation =
     glGetUniformLocation(program, "uColor");
 const GLint texturedLocation =
     glGetUniformLocation(program, "uUseTexture");
+    const GLint reflectivityLocation =
+        glGetUniformLocation(program, "uReflectivity");
+    const GLint environmentLocation =
+        glGetUniformLocation(program, "uEnvironmentMap");
 
 const HeadlightUniforms headlights{
     glGetUniformLocation(program, "uHeadlightsEnabled"),
@@ -200,6 +204,7 @@ int height = 0;
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(program);
+        glUniform1i(environmentLocation, 1);
 
         const glm::mat4 view = camera.viewMatrix();
 
@@ -229,7 +234,8 @@ int height = 0;
 
         uploadLights(program, gLights);
         scene.render(modelLocation, normalLocation, colorLocation, texturedLocation, paintMaterialLocation,
-                     headlights, state.paintColor, state.lampsEnabled, state.carVariant);
+                     reflectivityLocation, headlights, state.paintColor, state.lampsEnabled,
+                     state.reflectionsEnabled, state.carVariant);
         const std::array<bool, kLightCount> studioLightsEnabled = {
             gLights[0].enabled, gLights[1].enabled, gLights[2].enabled
         };
