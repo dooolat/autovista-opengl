@@ -4,6 +4,7 @@
 #include <glm/vec3.hpp>
 
 #include "Texture2D.h"
+#include "CubeMapTexture.h"
 
 #include <cstdint>
 #include <vector>
@@ -17,7 +18,8 @@ public:
     bool initialize();
     void update(float deltaTimeSeconds);
     void render(GLint modelLocation, GLint normalLocation, GLint colorLocation,
-                GLint texturedLocation, const glm::vec3& paintColor,
+                GLint texturedLocation, GLint paintMaterialLocation,
+                const HeadlightUniforms& headlights, const glm::vec3& paintColor,
                 bool lampsEnabled, int carVariant = 0) const;
     void destroy();
 
@@ -38,5 +40,6 @@ private:
     Mesh cube_;
     Mesh floor_;
     Texture2D floorTexture_;
+    CubeMapTexture environmentMap_;
     float angle_ = 0.0f;
 };

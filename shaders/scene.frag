@@ -16,6 +16,8 @@ struct Light {
 
 uniform vec3  uColor;
 uniform sampler2D uFloorTexture;
+uniform samplerCube uEnvironmentMap;
+uniform float uReflectivity;
 uniform int uUseTexture;
 uniform vec3  uViewPos;
 uniform float uShininess;
@@ -48,6 +50,11 @@ void main() {
         vec3 lightCol = uLights[i].color * uLights[i].intensity;
         result += atten * lightCol * (diff * baseColor + uSpecularStrength * spec);
     }
+
+    vec3 reflectedDirection = reflect(-V, N);
+    vec3 environmentColor = texture(uEnvironmentMap, reflectedDirection).rgb;
+    vec3 reflectiveColor = environmentColor * (0.35 + 0.65 * baseColor);
+    result = mix(result, reflectiveColor, clamp(uReflectivity, 0.0, 0.35));
 
     FragColor = vec4(result, 1.0);
 }

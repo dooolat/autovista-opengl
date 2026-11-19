@@ -126,40 +126,38 @@ int main() {
 
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.72f, 0.75f, 0.78f, 1.0f);
+const GLint modelLocation =
+    glGetUniformLocation(program, "uModel");
+const GLint normalLocation =
+    glGetUniformLocation(program, "uNormalMatrix");
+const GLint viewLocation =
+    glGetUniformLocation(program, "uView");
+const GLint projectionLocation =
+    glGetUniformLocation(program, "uProjection");
+const GLint colorLocation =
+    glGetUniformLocation(program, "uColor");
+const GLint texturedLocation =
+    glGetUniformLocation(program, "uUseTexture");
 
-    const GLint modelLocation =
-        glGetUniformLocation(program, "uModel");
+const HeadlightUniforms headlights{
+    glGetUniformLocation(program, "uHeadlightsEnabled"),
+    glGetUniformLocation(program, "uHeadlightPositions[0]"),
+    glGetUniformLocation(program, "uHeadlightDirection")
+};
+const GLint paintMaterialLocation =
+    glGetUniformLocation(program, "uPainted");
 
-    const GLint normalLocation =
-        glGetUniformLocation(program, "uNormalMatrix");
+const GLint viewPosLocation =
+    glGetUniformLocation(program, "uViewPos");
+const GLint shininessLocation =
+    glGetUniformLocation(program, "uShininess");
+const GLint specularLocation =
+    glGetUniformLocation(program, "uSpecularStrength");
+const GLint smoothShadingLocation =
+    glGetUniformLocation(program, "uSmoothShading");
 
-    const GLint viewLocation =
-        glGetUniformLocation(program, "uView");
-
-    const GLint projectionLocation =
-        glGetUniformLocation(program, "uProjection");
-
-    const GLint colorLocation =
-        glGetUniformLocation(program, "uColor");
-
-    const GLint texturedLocation =
-        glGetUniformLocation(program, "uUseTexture");
-
-    const GLint viewPosLocation =
-        glGetUniformLocation(program, "uViewPos");
-
-    const GLint shininessLocation =
-        glGetUniformLocation(program, "uShininess");
-
-    const GLint specularLocation =
-        glGetUniformLocation(program, "uSpecularStrength");
-
-    const GLint smoothShadingLocation =
-        glGetUniformLocation(program, "uSmoothShading");
-
-    int width = 0;
-    int height = 0;
-
+int width = 0;
+int height = 0;
     double previousTime = glfwGetTime();
 
     FpsCounter fpsCounter;
@@ -230,17 +228,26 @@ int main() {
         );
 
         uploadLights(program, gLights);
+glUniform1i(
+    smoothShadingLocation,
+    gSmoothShading ? 1 : 0
+);
 
-        scene.render(
-            modelLocation,
-            normalLocation,
-            colorLocation,
-            texturedLocation,
-            state.paintColor,
-            state.lampsEnabled,
-            state.carVariant
-        );
+uploadLights(program, gLights);
 
+scene.render(
+    modelLocation,
+    normalLocation,
+    colorLocation,
+    texturedLocation,
+    paintMaterialLocation,
+    headlights,
+    state.paintColor,
+    state.lampsEnabled,
+    state.carVariant
+);
+
+controlHelp.render(width, height);
         controlHelp.render(width, height);
 
         glBindVertexArray(0);
