@@ -9,6 +9,12 @@
 #include <cstdint>
 #include <vector>
 
+struct HeadlightUniforms {
+    GLint enabled = -1;
+    GLint positions = -1;
+    GLint direction = -1;
+};
+
 class AvtoVistaScene {
 public:
     AvtoVistaScene() = default;
@@ -19,8 +25,9 @@ public:
     void update(float deltaTimeSeconds);
     void render(GLint modelLocation, GLint normalLocation, GLint colorLocation,
                 GLint texturedLocation, GLint paintMaterialLocation,
-                const HeadlightUniforms& headlights, const glm::vec3& paintColor,
-                bool lampsEnabled, int carVariant = 0) const;
+                GLint reflectivityLocation, const HeadlightUniforms& headlights,
+                const glm::vec3& paintColor, bool lampsEnabled,
+                bool reflectionsEnabled, int carVariant = 0) const;
     void destroy();
 
 private:
