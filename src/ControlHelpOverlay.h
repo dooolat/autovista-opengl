@@ -6,7 +6,10 @@
 #endif
 #include <GLFW/glfw3.h>
 
+#include <array>
 #include <filesystem>
+
+#include "ConfiguratorControls.h"
 
 class ControlHelpOverlay {
 public:
@@ -14,7 +17,9 @@ public:
 
     bool initialize(const std::filesystem::path& shaderDirectory);
     void update();
-    void render(int framebufferWidth, int framebufferHeight) const;
+    void render(int framebufferWidth, int framebufferHeight,
+                const ConfiguratorState& state,
+                const std::array<bool, 3>& studioLightsEnabled) const;
     void destroy();
 
 private:

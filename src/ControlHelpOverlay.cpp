@@ -121,8 +121,6 @@ Glyph glyphFor(char character) {
     case '8': return {0x0E, 0x11, 0x11, 0x0E, 0x11, 0x11, 0x0E};
     case '9': return {0x0E, 0x11, 0x11, 0x0F, 0x01, 0x01, 0x0E};
     case '-': return {0x00, 0x00, 0x00, 0x0E, 0x00, 0x00, 0x00};
-    case '<': return {0x02, 0x04, 0x08, 0x10, 0x08, 0x04, 0x02};
-    case '>': return {0x08, 0x04, 0x02, 0x01, 0x02, 0x04, 0x08};
     default: return {};
     }
 }
@@ -197,37 +195,53 @@ void ControlHelpOverlay::update() {
     helpKeyWasDown_ = helpKeyDown;
 }
 
-void ControlHelpOverlay::render(int framebufferWidth, int framebufferHeight) const {
+void ControlHelpOverlay::render(int framebufferWidth, int framebufferHeight,
+                                const ConfiguratorState& state,
+                                const std::array<bool, 3>& studioLightsEnabled) const {
     if (!visible_ || framebufferWidth < 320 || framebufferHeight < 240 || program_ == 0) return;
 
-    const std::array<std::string, 14> lines = {
-        "H TO SHOW OR HIDE",
-        "MOUSE DRAG TO ORBIT",
+    static constexpr std::array<const char*, 9> paintNames = {
+        "", "", "", "", "", "RED", "BLUE", "GOLD", "GREEN"
+    };
+    static constexpr std::array<const char*, 3> carNames = {"SEDAN", "JEEP", "RACE"};
+    const std::string finish = state.glossy ? "GLOSSY" : "MATTE";
+    const std::string spin = state.turntablePaused ? "PAUSED" : "ACTIVE";
+    const std::string reflections = state.reflectionsEnabled ? "ON" : "OFF";
+    const std::string car = carNames[static_cast<std::size_t>(std::clamp(state.carVariant, 0, 2))];
+    const std::string paint = paintNames[static_cast<std::size_t>(std::clamp(state.paintPreset, 5, 8))];
+    const std::array<std::string, 15> lines = {
+        "H SHOW OR HIDE",
+        "MOUSE DRAG ORBIT",
         "WHEEL TO ZOOM",
         "ARROW KEYS ORBIT",
-        "< OR > SELECT CAR",
+        "COMMA PERIOD CAR " + car,
         "Q OR E TO ZOOM",
-        "1-3 TOGGLE LIGHTS",
-        "4 TOGGLE CAR LIGHTS",
-        "5-8 SELECT PAINT",
-        "M MATTE OR GLOSSY",
+        std::string("LIGHTS 1 ") + (studioLightsEnabled[0] ? "ON" : "OFF") +
+            " 2 " + (studioLightsEnabled[1] ? "ON" : "OFF") +
+            " 3 " + (studioLightsEnabled[2] ? "ON" : "OFF"),
+        std::string("4 CAR LIGHTS ") + (state.lampsEnabled ? "ON" : "OFF"),
+        "5-8 PAINT " + paint,
+        "M FINISH " + finish,
         "S SMOOTH SHADING",
         "F FLAT SHADING",
-        "SPACE PAUSE SPIN",
+        "SPACE SPIN " + spin,
+        "9 REFLECTIONS " + reflections,
         "ESC QUIT"
     };
-    constexpr float maxFontScale = 2.4f;
-    constexpr float margin = 18.0f;
-    constexpr float textLeftPadding = 16.0f;
-    constexpr float textTopPadding = 14.0f;
-    constexpr float rowGap = 7.0f;
+    constexpr float reduction = 0.9f;
+    constexpr float maxFontScale = 2.4f * reduction;
+    constexpr float margin = 18.0f * reduction;
+    constexpr float textLeftPadding = 16.0f * reduction;
+    constexpr float textTopPadding = 14.0f * reduction;
+    constexpr float rowGap = 7.0f * reduction;
     const std::size_t longestLine = std::max_element(
         lines.begin(), lines.end(), [](const std::string& left, const std::string& right) {
             return left.size() < right.size();
         })->size();
-    const float panelWidth = std::min(430.0f, static_cast<float>(framebufferWidth) - 2.0f * margin);
+    const float panelWidth = std::min(430.0f * reduction,
+                                      static_cast<float>(framebufferWidth) - 2.0f * margin);
     const float fontScale = std::min(maxFontScale,
-        std::max(1.0f, (panelWidth - 2.0f * textLeftPadding) /
+        std::max(0.9f, (panelWidth - 2.0f * textLeftPadding) /
                           (6.0f * static_cast<float>(longestLine))));
     const float lineHeight = 7.0f * fontScale + rowGap;
     const float panelHeight = 2.0f * textTopPadding +
@@ -237,7 +251,7 @@ void ControlHelpOverlay::render(int framebufferWidth, int framebufferHeight) con
     vertices.reserve(6000);
     appendRectangle(vertices, margin, margin, panelWidth, panelHeight,
                     framebufferWidth, framebufferHeight, {0.025f, 0.04f, 0.065f, 0.88f});
-    appendRectangle(vertices, margin, margin, panelWidth, 3.0f,
+    appendRectangle(vertices, margin, margin, panelWidth, 3.0f * reduction,
                     framebufferWidth, framebufferHeight, {0.18f, 0.78f, 0.86f, 1.0f});
 
     float textY = margin + textTopPadding;
