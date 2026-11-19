@@ -17,6 +17,9 @@ uniform vec3  uColor;
 uniform sampler2D uFloorTexture;
 uniform int uUseTexture;
 uniform vec3  uViewPos;
+uniform bool uHeadlightsEnabled;
+uniform vec3 uHeadlightPositions[2];
+uniform vec3 uHeadlightDirection;
 uniform bool uPainted;
 uniform float uShininess;
 uniform float uSpecularStrength;
@@ -48,5 +51,17 @@ void main() {
         result += atten * lightCol * (diff * baseColor + specularStrength * spec);
     }
 
+    if (uHeadlightsEnabled) {
+        for (int i = 0; i < 2; ++i) {
+            vec3 ray = vWorldPos - uHeadlightPositions[i];
+            float distanceSquared = max(dot(ray, ray), 0.0001);
+            vec3 direction = ray * inversesqrt(distanceSquared);
+            float cone = smoothstep(cos(radians(22.0)), cos(radians(12.0)),
+                                    dot(direction, uHeadlightDirection));
+            float diffuse = max(dot(N, -direction), 0.0);
+            result += baseColor * vec3(1.0, 0.95, 0.82) * cone * diffuse
+                      * (5.0 / (1.0 + 0.3 * distanceSquared));
+        }
+    }
     FragColor = vec4(result, 1.0);
 }

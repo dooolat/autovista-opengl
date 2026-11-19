@@ -101,6 +101,11 @@ int main() {
     const GLint projectionLocation = glGetUniformLocation(program, "uProjection");
     const GLint colorLocation = glGetUniformLocation(program, "uColor");
     const GLint texturedLocation = glGetUniformLocation(program, "uUseTexture");
+    const HeadlightUniforms headlights{
+        glGetUniformLocation(program, "uHeadlightsEnabled"),
+        glGetUniformLocation(program, "uHeadlightPositions[0]"),
+        glGetUniformLocation(program, "uHeadlightDirection")
+    };
     const GLint paintMaterialLocation = glGetUniformLocation(program, "uPainted");
     const GLint viewPosLocation = glGetUniformLocation(program, "uViewPos");
     const GLint shininessLocation = glGetUniformLocation(program, "uShininess");
@@ -142,7 +147,7 @@ int main() {
         glUniform1f(specularLocation, state.specularStrength);
         uploadLights(program, gLights);
         scene.render(modelLocation, normalLocation, colorLocation, texturedLocation, paintMaterialLocation,
-                     state.paintColor, state.lampsEnabled, state.carVariant);
+                     headlights, state.paintColor, state.lampsEnabled, state.carVariant);
         controlHelp.render(width, height);
         glBindVertexArray(0);
         glfwSwapBuffers(window);
