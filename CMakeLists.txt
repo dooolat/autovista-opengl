@@ -39,7 +39,8 @@ add_executable(AutoVista
     src/CameraControls.cpp
     src/ControlHelpOverlay.cpp
     src/ConfiguratorControls.cpp
-    src/Texture2D.cpp)
+    src/Texture2D.cpp
+    src/CubeMapTexture.cpp)
 target_link_libraries(AutoVista PRIVATE glfw glm::glm glad OpenGL::GL)
 file(TO_CMAKE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/shaders" AUTOVISTA_SHADER_DIR)
 target_compile_definitions(AutoVista PRIVATE

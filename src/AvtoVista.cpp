@@ -171,7 +171,7 @@ bool AvtoVistaScene::initialize() {
     if (!cylinder_.create(cylinder.vertices, cylinder.indices) ||
         !cube_.create(cube.vertices, cube.indices) ||
         !floor_.create(floor.vertices, floor.indices) ||
-        !floorTexture_.initialize()) {
+        !floorTexture_.initialize() || !environmentMap_.initialize()) {
         destroy();
         return false;
     }

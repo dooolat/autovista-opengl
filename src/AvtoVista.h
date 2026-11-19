@@ -4,15 +4,10 @@
 #include <glm/vec3.hpp>
 
 #include "Texture2D.h"
+#include "CubeMapTexture.h"
 
 #include <cstdint>
 #include <vector>
-
-struct HeadlightUniforms {
-    GLint enabled;
-    GLint positions;
-    GLint direction;
-};
 
 class AvtoVistaScene {
 public:
@@ -45,5 +40,6 @@ private:
     Mesh cube_;
     Mesh floor_;
     Texture2D floorTexture_;
+    CubeMapTexture environmentMap_;
     float angle_ = 0.0f;
 };
