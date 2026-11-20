@@ -23,6 +23,9 @@ uniform vec3  uViewPos;
 uniform float uShininess;
 uniform float uSpecularStrength;
 uniform int uSmoothShading;
+uniform bool uHeadlightsEnabled;
+uniform vec3 uHeadlightPositions[2];
+uniform vec3 uHeadlightDirection;
 uniform Light uLights[MAX_LIGHTS];
 
 void main() {
@@ -49,6 +52,20 @@ void main() {
 
         vec3 lightCol = uLights[i].color * uLights[i].intensity;
         result += atten * lightCol * (diff * baseColor + uSpecularStrength * spec);
+    }
+
+    if (uHeadlightsEnabled) {
+        for (int i = 0; i < 2; ++i) {
+            vec3 fromLamp = vWorldPos - uHeadlightPositions[i];
+            float distanceSquared = max(dot(fromLamp, fromLamp), 0.0001);
+            vec3 ray = fromLamp * inversesqrt(distanceSquared);
+            float cone = smoothstep(cos(radians(22.0)), cos(radians(12.0)),
+                                    dot(ray, uHeadlightDirection));
+            float diffuse = max(dot(N, -ray), 0.0);
+            vec3 lampColor = vec3(1.0, 0.95, 0.82);
+            result += baseColor * lampColor * diffuse * cone
+                      * (5.0 / (1.0 + 0.3 * distanceSquared));
+        }
     }
 
     vec3 reflectedDirection = reflect(-V, N);
