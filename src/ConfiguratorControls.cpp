@@ -47,12 +47,12 @@ void ConfiguratorControls::update() {
 
     const bool previousCarKeyDown = keyDown(window_, GLFW_KEY_COMMA);
     if (previousCarKeyDown && !previousCarKeyWasDown_)
-        state_.carVariant = (state_.carVariant + 1) % 3;
+        state_.carVariant = (state_.carVariant + 1) % 2;
     previousCarKeyWasDown_ = previousCarKeyDown;
 
     const bool nextCarKeyDown = keyDown(window_, GLFW_KEY_PERIOD);
     if (nextCarKeyDown && !nextCarKeyWasDown_)
-        state_.carVariant = (state_.carVariant + 1) % 3;
+        state_.carVariant = (state_.carVariant + 1) % 2;
     nextCarKeyWasDown_ = nextCarKeyDown;
 
     const bool matteKeyDown = keyDown(window_, GLFW_KEY_M);
