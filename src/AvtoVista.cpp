@@ -185,29 +185,13 @@ void AvtoVistaScene::update(float deltaTimeSeconds) {
 }
 
 void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
-                            GLint colorLocation, GLint texturedLocation, GLint paintMaterialLocation,
-                            GLint reflectivityLocation,
+                            GLint colorLocation, GLint texturedLocation,
+                            GLint paintMaterialLocation, GLint reflectivityLocation,
                             const HeadlightUniforms& headlights,
                             const glm::vec3& paintColor, bool lampsEnabled,
                             bool reflectionsEnabled, int carVariant) const {
     const glm::mat4 identity(1.0f);
     const glm::mat4 turntable = glm::rotate(identity, angle_, glm::vec3(0.0f, 1.0f, 0.0f));
-    const glm::vec3 lampCenters[] = {{1.285f, 0.49f, -0.34f}, {1.285f, 0.49f, 0.34f}};
-    glUniform1i(headlights.enabled, lampsEnabled);
-    if (lampsEnabled) {
-        float positions[6];
-        for (int i = 0; i < 2; ++i) {
-            const glm::vec3 lensFront = lampCenters[i] + glm::vec3(0.025f, 0.0f, 0.0f);
-            const glm::vec4 world = turntable * glm::vec4(lensFront, 1.0f);
-            positions[3 * i] = world.x;
-            positions[3 * i + 1] = world.y;
-            positions[3 * i + 2] = world.z;
-        }
-        const glm::vec3 direction = glm::normalize(glm::mat3(turntable) * glm::vec3(1.0f, -0.18f, 0.0f));
-        glUniform3fv(headlights.positions, 2, positions);
-        glUniform3fv(headlights.direction, 1, glm::value_ptr(direction));
-    }
-
     const auto draw = [&](const Mesh& mesh, const glm::mat4& model, const glm::vec3& color) {
         glUniform1i(texturedLocation, GL_FALSE);
         glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
@@ -218,14 +202,52 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
     };
     const auto drawCarBox = [&](const glm::vec3& position, const glm::vec3& size,
                                 const glm::vec3& color, float zRotation = 0.0f) {
+        glUniform1i(paintMaterialLocation, GL_FALSE);
         draw(cube_, turntable * boxTransform(position, size, zRotation), color);
     };
     const auto drawPaintedCarBox = [&](const glm::vec3& position, const glm::vec3& size) {
+        glUniform1i(paintMaterialLocation, GL_TRUE);
         glUniform1f(reflectivityLocation, reflectionsEnabled ? 0.22f : 0.0f);
         draw(cube_, turntable * boxTransform(position, size), paintColor);
         glUniform1f(reflectivityLocation, 0.0f);
+        glUniform1i(paintMaterialLocation, GL_FALSE);
     };
-    const bool alternateCar = carVariant == 1;
+    const bool jeepVariant = carVariant == 1;
+    const float bodyHalfLength = jeepVariant ? 1.335f : 1.275f;
+    const float bodyCenterX = jeepVariant ? -0.185f : 0.0f;
+    const float bodyFrontX = bodyCenterX + bodyHalfLength;
+    const float bodyRearX = bodyCenterX - bodyHalfLength;
+    const float bodyCenterY = jeepVariant ? 0.48f : 0.43f;
+    const float bodyHalfHeight = jeepVariant ? 0.26f : 0.215f;
+    const float bodyHalfWidth = jeepVariant ? 0.64f : 0.56f;
+    const float cabinCenterX = jeepVariant ? -0.66f : -0.18f;
+    const float cabinCenterY = jeepVariant ? 0.89f : 0.77f;
+    const float cabinHalfLength = jeepVariant ? 0.86f : 0.675f;
+    const float cabinHalfHeight = jeepVariant ? 0.30f : 0.17f;
+    const float cabinHalfWidth = jeepVariant ? 0.60f : 0.455f;
+
+    const float lampOffsetZ = jeepVariant
+        ? bodyHalfWidth - 0.15f : bodyHalfWidth * 0.61f;
+    const float lampCenterX = bodyFrontX + (jeepVariant ? 0.055f : 0.01f);
+    const glm::vec3 lampCenters[] = {
+        {lampCenterX, bodyCenterY + 0.06f, -lampOffsetZ},
+        {lampCenterX, bodyCenterY + 0.06f, lampOffsetZ}
+    };
+    glUniform1i(headlights.enabled, lampsEnabled ? GL_TRUE : GL_FALSE);
+    if (lampsEnabled) {
+        float positions[6];
+        for (int i = 0; i < 2; ++i) {
+            const glm::vec3 lensFront = lampCenters[i] + glm::vec3(0.025f, 0.0f, 0.0f);
+            const glm::vec4 world = turntable * glm::vec4(lensFront, 1.0f);
+            positions[3 * i] = world.x;
+            positions[3 * i + 1] = world.y;
+            positions[3 * i + 2] = world.z;
+        }
+        const glm::vec3 direction = glm::normalize(
+            glm::mat3(turntable) * glm::vec3(1.0f, -0.18f, 0.0f));
+        glUniform3fv(headlights.positions, 2, positions);
+        glUniform3fv(headlights.direction, 1, glm::value_ptr(direction));
+    }
 
     // Textured showroom floor. Keep it separate so the car meshes stay unchanged.
     glUniform1i(paintMaterialLocation, GL_FALSE);
@@ -267,77 +289,155 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
     draw(cylinder_, turntable * boxTransform({0.0f, 0.035f, 0.0f}, {1.62f, 0.035f, 1.62f}),
          {0.27f, 0.31f, 0.35f});
 
-    // Only the painted body and cabin use the selected finish.
-    glUniform1i(paintMaterialLocation, GL_TRUE);
-    drawPaintedCarBox({0.0f, alternateCar ? 0.48f : 0.43f, 0.0f},
-                      alternateCar ? glm::vec3(2.30f, 0.52f, 1.28f)
-                                   : glm::vec3(2.55f, 0.43f, 1.12f));
-    drawPaintedCarBox({alternateCar ? -0.10f : -0.18f,
-                       alternateCar ? 0.91f : 0.77f, 0.0f},
-                      alternateCar ? glm::vec3(1.48f, 0.48f, 1.04f)
-                                   : glm::vec3(1.35f, 0.34f, 0.91f));
-    glUniform1i(paintMaterialLocation, GL_FALSE);
-    if (alternateCar) {
-        drawCarBox({-0.10f, 1.18f, -0.45f}, {1.40f, 0.06f, 0.05f},
+    // Main body and cabin.
+    drawPaintedCarBox({bodyCenterX, bodyCenterY, 0.0f},
+                      {2.0f * bodyHalfLength, 2.0f * bodyHalfHeight,
+                       2.0f * bodyHalfWidth});
+    drawPaintedCarBox({cabinCenterX, cabinCenterY, 0.0f},
+                      {2.0f * cabinHalfLength, 2.0f * cabinHalfHeight,
+                       2.0f * cabinHalfWidth});
+    if (jeepVariant) {
+        drawPaintedCarBox({0.66f, 0.745f, 0.0f}, {0.98f, 0.045f, 1.18f});
+        drawCarBox({cabinCenterX, 1.22f, -0.53f}, {1.40f, 0.06f, 0.05f},
                    {0.06f, 0.07f, 0.08f});
-        drawCarBox({-0.10f, 1.18f, 0.45f}, {1.40f, 0.06f, 0.05f},
+        drawCarBox({cabinCenterX, 1.22f, 0.53f}, {1.40f, 0.06f, 0.05f},
                    {0.06f, 0.07f, 0.08f});
+        drawCarBox({cabinCenterX - 0.48f, 1.27f, 0.0f}, {0.055f, 0.05f, 1.06f},
+                   {0.06f, 0.07f, 0.08f});
+        drawCarBox({cabinCenterX + 0.48f, 1.27f, 0.0f}, {0.055f, 0.05f, 1.06f},
+                   {0.06f, 0.07f, 0.08f});
+        drawCarBox({cabinCenterX - cabinHalfLength - 0.012f, 1.055f, 0.0f},
+                   {0.025f, 0.15f, 0.70f}, {0.035f, 0.075f, 0.095f});
+        drawCarBox({bodyRearX - 0.025f, 0.77f, 0.39f},
+                   {0.025f, 0.055f, 0.12f}, {0.58f, 0.62f, 0.66f});
     }
 
-    // Dark windows and sloped front and rear glass.
+    // Dark side windows sit just outside the cabin faces so both variants show them.
     for (const float side : {-1.0f, 1.0f}) {
-        const float z = side * 0.468f;
-        drawCarBox({-0.23f, 0.78f, z}, {0.52f, 0.20f, 0.035f},
+        const float z = side * (cabinHalfWidth + 0.02f);
+        const float windowHeight = jeepVariant ? 0.38f : 0.20f;
+        const float rearWindowLength = jeepVariant ? 0.50f : 0.52f;
+        const float frontWindowLength = jeepVariant ? 0.42f : 0.40f;
+        const float rearWindowOffset = jeepVariant ? -0.34f : -0.05f;
+        const float frontWindowOffset = jeepVariant ? 0.34f : 0.43f;
+        drawCarBox({cabinCenterX + rearWindowOffset, cabinCenterY, z},
+                   {rearWindowLength, windowHeight, 0.035f},
                    {0.035f, 0.075f, 0.095f});
-        drawCarBox({0.29f, 0.78f, z}, {0.40f, 0.20f, 0.035f},
+        drawCarBox({cabinCenterX + frontWindowOffset, cabinCenterY, z},
+                   {frontWindowLength, windowHeight, 0.035f},
                    {0.035f, 0.075f, 0.095f});
-        drawCarBox({0.28f, 0.77f, side * 0.60f}, {0.16f, 0.08f, 0.12f},
-                   {0.06f, 0.07f, 0.08f});
+        const float mirrorX = cabinCenterX + cabinHalfLength - 0.08f;
+        const float mirrorHeightAdjustment = jeepVariant ? 0.06f : -0.025f;
+        const float mirrorY = cabinCenterY - 0.5f * windowHeight - 0.045f
+            + mirrorHeightAdjustment;
+        const float mirrorOutset = jeepVariant ? 0.08f : 0.105f;
+        const float mirrorZ = cabinHalfWidth + mirrorOutset;
+        const float mirrorStemOutset = 0.045f;
+        const glm::vec3 mirrorColor(0.06f, 0.07f, 0.08f);
+        drawCarBox({mirrorX, mirrorY - 0.028f,
+                    side * (cabinHalfWidth + mirrorStemOutset)},
+                   {0.045f, 0.025f, 0.06f}, mirrorColor);
+        drawCarBox({mirrorX, mirrorY, side * mirrorZ},
+                   {0.11f, 0.055f, 0.075f}, mirrorColor);
     }
-
-    // Small door handles on both sides, built from the existing cube mesh.
+    // Door handles sit on the outside face of each body's side panel.
     for (const float side : {-1.0f, 1.0f}) {
-        drawCarBox({-0.42f, 0.52f, side * 0.575f}, {0.18f, 0.035f, 0.025f},
+        const float handleY = 0.52f;
+        const float handleZ = side * (bodyHalfWidth + 0.012f);
+        const float rearHandleX = jeepVariant ? cabinCenterX - 0.24f : -0.22f;
+        const float frontHandleX = jeepVariant ? cabinCenterX + 0.44f : 0.34f;
+        drawCarBox({rearHandleX, handleY, handleZ},
+                   {0.18f, 0.035f, 0.025f},
                    {0.58f, 0.62f, 0.66f});
-        drawCarBox({0.40f, 0.52f, side * 0.575f}, {0.18f, 0.035f, 0.025f},
+        drawCarBox({frontHandleX, handleY, handleZ},
+                   {0.18f, 0.035f, 0.025f},
                    {0.58f, 0.62f, 0.66f});
     }
 
-    drawCarBox({0.48f, 0.77f, 0.0f}, {0.045f, 0.24f, 0.72f},
-               {0.035f, 0.075f, 0.095f}, -0.28f);
-    drawCarBox({-0.76f, 0.76f, 0.0f}, {0.045f, 0.22f, 0.72f},
-               {0.035f, 0.075f, 0.095f}, 0.30f);
+    // Place the front windshields just outside the cabin face so the red body
+    // cannot cover the glass. The Jeep's windshield stays nearly upright.
+    const float frontGlassHeight = jeepVariant ? 0.50f : 0.27f;
+    const float frontFaceX = cabinCenterX + cabinHalfLength;
+    drawCarBox({frontFaceX + 0.015f, cabinCenterY, 0.0f},
+               {0.035f, frontGlassHeight, 1.7f * cabinHalfWidth},
+               {0.025f, 0.065f, 0.085f});
+
+    if (!jeepVariant) {
+        const float rearFaceX = cabinCenterX - cabinHalfLength;
+        const float rearGlassHeight = 0.20f;
+        drawCarBox({rearFaceX - 0.015f, cabinCenterY, 0.0f},
+                   {0.035f, rearGlassHeight, 1.7f * cabinHalfWidth},
+                   {0.025f, 0.065f, 0.085f});
+    }
 
     // Four tires with metallic hubs.
     for (const float side : {-1.0f, 1.0f}) {
+        const float wheelPosition = jeepVariant ? 0.72f : 0.78f;
         const float wheelPositions[] = {
-            alternateCar ? -0.72f : -0.78f,
-            alternateCar ? 0.72f : 0.78f
+            jeepVariant ? -0.82f : -wheelPosition,
+            wheelPosition
         };
+        const float wheelCenterY = 0.34f;
+        const float wheelSideZ = bodyHalfWidth + 0.005f;
         for (const float x : wheelPositions) {
             const glm::mat4 tire = turntable *
-                glm::translate(identity, {x, 0.34f, side * 0.565f}) *
+                glm::translate(identity, {x, wheelCenterY, side * wheelSideZ}) *
                 glm::rotate(identity, 0.5f * kPi, {1.0f, 0.0f, 0.0f}) *
                 glm::scale(identity, {0.30f, 0.16f, 0.30f});
             draw(cylinder_, tire, {0.035f, 0.04f, 0.047f});
 
             const glm::mat4 hub = turntable *
-                glm::translate(identity, {x, 0.34f, side * 0.66f}) *
+                glm::translate(identity, {x, wheelCenterY, side * (wheelSideZ + 0.095f)}) *
                 glm::rotate(identity, 0.5f * kPi, {1.0f, 0.0f, 0.0f}) *
                 glm::scale(identity, {0.15f, 0.025f, 0.15f});
             draw(cylinder_, hub, {0.52f, 0.58f, 0.63f});
+
         }
     }
 
-    // A simple front grille with three horizontal slats.
-    drawCarBox({1.294f, 0.43f, 0.0f}, {0.035f, 0.14f, 0.32f},
-               {0.035f, 0.045f, 0.055f});
-    drawCarBox({1.316f, 0.385f, 0.0f}, {0.012f, 0.012f, 0.27f},
-               {0.48f, 0.53f, 0.58f});
-    drawCarBox({1.316f, 0.43f, 0.0f}, {0.012f, 0.012f, 0.27f},
-               {0.48f, 0.53f, 0.58f});
-    drawCarBox({1.316f, 0.475f, 0.0f}, {0.012f, 0.012f, 0.27f},
-               {0.48f, 0.53f, 0.58f});
+    if (jeepVariant) {
+        for (const float side : {-1.0f, 1.0f}) {
+            // Running boards stop before the wheel arches, leaving a clear gap.
+            drawCarBox({0.0f, 0.27f, side * 0.68f}, {0.60f, 0.08f, 0.14f},
+                       {0.07f, 0.08f, 0.09f});
+        }
+    }
+
+    if (jeepVariant) {
+        // Rear-mounted spare tire sits against its tailgate mount.
+        const glm::vec3 sparePosition(bodyRearX - 0.06f, 0.72f, 0.0f);
+        const glm::mat4 spareTire = turntable *
+            glm::translate(identity, sparePosition) *
+            glm::rotate(identity, 0.5f * kPi, {0.0f, 0.0f, 1.0f}) *
+            glm::scale(identity, {0.28f, 0.12f, 0.28f});
+        draw(cylinder_, spareTire, {0.035f, 0.04f, 0.047f});
+        const glm::mat4 spareHub = turntable *
+            glm::translate(identity, {sparePosition.x - 0.0485f, sparePosition.y, 0.0f}) *
+            glm::rotate(identity, 0.5f * kPi, {0.0f, 0.0f, 1.0f}) *
+            glm::scale(identity, {0.12f, 0.035f, 0.12f});
+        draw(cylinder_, spareHub, {0.52f, 0.58f, 0.63f});
+    }
+
+    // The Jeep gets upright grille slats; the other models use a horizontal grille.
+    const float grilleX = bodyFrontX + 0.019f;
+    const float grilleSlatX = bodyFrontX + 0.041f;
+    if (jeepVariant) {
+        drawCarBox({grilleX, bodyCenterY, 0.0f}, {0.035f, 0.16f, 0.40f},
+                   {0.035f, 0.045f, 0.055f});
+        for (int slot = -3; slot <= 3; ++slot) {
+            drawCarBox({grilleSlatX, bodyCenterY, static_cast<float>(slot) * 0.05f},
+                       {0.012f, 0.125f, 0.018f}, {0.58f, 0.62f, 0.66f});
+        }
+    } else {
+        drawCarBox({grilleX, bodyCenterY, 0.0f}, {0.035f, 0.14f, 0.32f},
+                   {0.035f, 0.045f, 0.055f});
+        drawCarBox({grilleSlatX, bodyCenterY - 0.045f, 0.0f}, {0.012f, 0.012f, 0.27f},
+                   {0.48f, 0.53f, 0.58f});
+        drawCarBox({grilleSlatX, bodyCenterY, 0.0f}, {0.012f, 0.012f, 0.27f},
+                   {0.48f, 0.53f, 0.58f});
+        drawCarBox({grilleSlatX, bodyCenterY + 0.045f, 0.0f}, {0.012f, 0.012f, 0.27f},
+                   {0.48f, 0.53f, 0.58f});
+    }
 
     // Headlights, tail lights, and bumpers.
     const glm::vec3 headlightColor = lampsEnabled
@@ -346,21 +446,45 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
     const glm::vec3 tailLightColor = lampsEnabled
         ? glm::vec3(0.55f, 0.025f, 0.02f)
         : glm::vec3(0.10f, 0.018f, 0.015f);
-    for (const auto& center : lampCenters)
-        drawCarBox(center, {0.04f, 0.105f, 0.19f}, headlightColor);
     for (const float side : {-1.0f, 1.0f}) {
-        drawCarBox({-1.285f, 0.47f, side * 0.35f}, {0.04f, 0.11f, 0.18f},
-                   tailLightColor);
+        const float lampSideZ = side * (jeepVariant
+            ? bodyHalfWidth - 0.15f : bodyHalfWidth * 0.61f);
+        if (jeepVariant) {
+            const glm::mat4 headlightFrame = turntable *
+                glm::translate(identity, {bodyFrontX + 0.025f,
+                                          bodyCenterY + 0.06f, lampSideZ}) *
+                glm::rotate(identity, 0.5f * kPi, {0.0f, 0.0f, 1.0f});
+            draw(cylinder_, headlightFrame * glm::scale(identity, {0.15f, 0.045f, 0.15f}),
+                 {0.045f, 0.05f, 0.055f});
+            draw(cylinder_, turntable *
+                 glm::translate(identity, {bodyFrontX + 0.055f,
+                                           bodyCenterY + 0.06f, lampSideZ}) *
+                 glm::rotate(identity, 0.5f * kPi, {0.0f, 0.0f, 1.0f}) *
+                 glm::scale(identity, {0.105f, 0.035f, 0.105f}), headlightColor);
+        } else {
+            drawCarBox({bodyFrontX + 0.01f, bodyCenterY + 0.06f, lampSideZ},
+                       {0.04f, 0.105f, 0.19f}, headlightColor);
+        }
+
+        drawCarBox({bodyRearX - 0.01f, bodyCenterY + 0.04f,
+                    side * (jeepVariant ? bodyHalfWidth - 0.06f : bodyHalfWidth * 0.61f)},
+                   jeepVariant ? glm::vec3(0.045f, 0.18f, 0.12f)
+                               : glm::vec3(0.04f, 0.11f, 0.18f), tailLightColor);
     }
-    drawCarBox({1.30f, 0.34f, 0.0f}, {0.06f, 0.15f, 0.48f},
+    drawCarBox({bodyFrontX + 0.025f, bodyCenterY - 0.09f, 0.0f},
+               {0.06f, 0.15f, 0.48f},
                {0.045f, 0.052f, 0.06f});
-    drawCarBox({-1.30f, 0.32f, 0.0f}, {0.06f, 0.13f, 0.55f},
+    drawCarBox({bodyRearX - 0.025f, bodyCenterY - 0.11f, 0.0f},
+               {0.06f, 0.13f, 0.55f},
                {0.045f, 0.052f, 0.06f});
 }
 
 void AvtoVistaScene::destroy() {
+    environmentMap_.destroy();
     floorTexture_.destroy();
     floor_.destroy();
     cube_.destroy();
     cylinder_.destroy();
 }
+
+
