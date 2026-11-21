@@ -60,7 +60,7 @@ cmake --build build --config Release
 | GitHub account | Main contributions |
 |---|---|
 | Dulat (`dooolat`) | Orbit camera and controls, configurator and paint controls, control-help overlay, per-vertex normals, and car selection. |
-| Daulet (`MrLucky06`) | Procedural showroom and car geometry; Sedan Jeep variants. |
+| Daulet (`MrLucky06`) | Procedural showroom and car geometry; Sedan and Jeep variants. |
 | Dias (`Dias-devs`) | OpenGL rendering foundation, shader-program module, smooth/flat shading, and cubemap environment setup. |
 | Diar (`diar06kz`) | Blinn–Phong studio lighting, headlight spotlights, and material-finish rendering. |
 | Murat (`Murat513`) | FPS counter and target window size, cubemap reflection integration, and performance measurements. |
