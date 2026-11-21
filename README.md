@@ -22,7 +22,7 @@ AutoVista is an interactive 3D car showroom built with C++17 and OpenGL 3.3 Core
 | Left mouse drag | Orbit camera |
 | Arrow keys | Orbit camera |
 | Mouse wheel or `Q` / `E` | Zoom |
-| `,` / `.` | Cycle through sedan, Jeep, and racing car |
+| `,` / `.` | Previous / next car |
 | `1` / `2` / `3` | Toggle studio lights |
 | `4` | Toggle car lamps and headlight spotlights |
 | `5` / `6` / `7` / `8` | Select red / blue / gold / green paint |
