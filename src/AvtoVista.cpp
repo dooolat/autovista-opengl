@@ -213,18 +213,19 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
         glUniform1i(paintMaterialLocation, GL_FALSE);
     };
     const bool jeepVariant = carVariant == 1;
-    const float bodyHalfLength = jeepVariant ? 1.335f : 1.275f;
+    const bool raceVariant = carVariant == 2;
+    const float bodyHalfLength = raceVariant ? 1.25f : (jeepVariant ? 1.335f : 1.275f);
     const float bodyCenterX = jeepVariant ? -0.185f : 0.0f;
     const float bodyFrontX = bodyCenterX + bodyHalfLength;
     const float bodyRearX = bodyCenterX - bodyHalfLength;
-    const float bodyCenterY = jeepVariant ? 0.48f : 0.43f;
-    const float bodyHalfHeight = jeepVariant ? 0.26f : 0.215f;
-    const float bodyHalfWidth = jeepVariant ? 0.64f : 0.56f;
-    const float cabinCenterX = jeepVariant ? -0.66f : -0.18f;
-    const float cabinCenterY = jeepVariant ? 0.89f : 0.77f;
-    const float cabinHalfLength = jeepVariant ? 0.86f : 0.675f;
-    const float cabinHalfHeight = jeepVariant ? 0.30f : 0.17f;
-    const float cabinHalfWidth = jeepVariant ? 0.60f : 0.455f;
+    const float bodyCenterY = raceVariant ? 0.38f : (jeepVariant ? 0.48f : 0.43f);
+    const float bodyHalfHeight = raceVariant ? 0.19f : (jeepVariant ? 0.26f : 0.215f);
+    const float bodyHalfWidth = raceVariant ? 0.625f : (jeepVariant ? 0.64f : 0.56f);
+    const float cabinCenterX = raceVariant ? -0.12f : (jeepVariant ? -0.66f : -0.18f);
+    const float cabinCenterY = raceVariant ? 0.68f : (jeepVariant ? 0.89f : 0.77f);
+    const float cabinHalfLength = raceVariant ? 0.55f : (jeepVariant ? 0.86f : 0.675f);
+    const float cabinHalfHeight = raceVariant ? 0.17f : (jeepVariant ? 0.30f : 0.17f);
+    const float cabinHalfWidth = raceVariant ? 0.40f : (jeepVariant ? 0.60f : 0.455f);
 
     const float lampOffsetZ = jeepVariant
         ? bodyHalfWidth - 0.15f : bodyHalfWidth * 0.61f;
@@ -293,9 +294,35 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
     drawPaintedCarBox({bodyCenterX, bodyCenterY, 0.0f},
                       {2.0f * bodyHalfLength, 2.0f * bodyHalfHeight,
                        2.0f * bodyHalfWidth});
-    drawPaintedCarBox({cabinCenterX, cabinCenterY, 0.0f},
-                      {2.0f * cabinHalfLength, 2.0f * cabinHalfHeight,
-                       2.0f * cabinHalfWidth});
+    if (raceVariant) {
+        // A low canopy, broad hood, rear deck, side skirts, and rear wing make
+        // the third model read as a racing coupe using only cube geometry.
+        drawCarBox({cabinCenterX, cabinCenterY, 0.0f},
+                   {2.0f * cabinHalfLength, 2.0f * cabinHalfHeight,
+                    2.0f * cabinHalfWidth}, {0.055f, 0.07f, 0.085f});
+        drawPaintedCarBox({0.68f, bodyCenterY + 0.17f, 0.0f},
+                          {0.92f, 0.10f, 1.14f});
+        drawPaintedCarBox({-0.80f, bodyCenterY + 0.15f, 0.0f},
+                          {0.78f, 0.12f, 1.08f});
+        drawCarBox({-0.20f, bodyCenterY + 0.22f, -0.32f},
+                   {1.55f, 0.035f, 0.075f}, {0.92f, 0.92f, 0.86f});
+        drawCarBox({-0.20f, bodyCenterY + 0.22f, 0.32f},
+                   {1.55f, 0.035f, 0.075f}, {0.92f, 0.92f, 0.86f});
+        for (const float side : {-1.0f, 1.0f}) {
+            drawCarBox({0.0f, bodyCenterY - 0.02f, side * 0.62f},
+                       {1.55f, 0.08f, 0.10f}, {0.045f, 0.05f, 0.06f});
+            drawCarBox({-1.06f, 0.66f, side * 0.43f},
+                       {0.08f, 0.40f, 0.055f}, {0.055f, 0.065f, 0.08f});
+        }
+        drawCarBox({-1.06f, 0.88f, 0.0f}, {0.25f, 0.07f, 1.48f},
+                   {0.055f, 0.065f, 0.08f});
+        drawCarBox({1.18f, bodyCenterY - 0.04f, 0.0f},
+                   {0.20f, 0.045f, 1.42f}, {0.055f, 0.065f, 0.08f});
+    } else {
+        drawPaintedCarBox({cabinCenterX, cabinCenterY, 0.0f},
+                          {2.0f * cabinHalfLength, 2.0f * cabinHalfHeight,
+                           2.0f * cabinHalfWidth});
+    }
     if (jeepVariant) {
         drawPaintedCarBox({0.66f, 0.745f, 0.0f}, {0.98f, 0.045f, 1.18f});
         drawCarBox({cabinCenterX, 1.22f, -0.53f}, {1.40f, 0.06f, 0.05f},
@@ -315,11 +342,11 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
     // Dark side windows sit just outside the cabin faces so both variants show them.
     for (const float side : {-1.0f, 1.0f}) {
         const float z = side * (cabinHalfWidth + 0.02f);
-        const float windowHeight = jeepVariant ? 0.38f : 0.20f;
-        const float rearWindowLength = jeepVariant ? 0.50f : 0.52f;
-        const float frontWindowLength = jeepVariant ? 0.42f : 0.40f;
+        const float windowHeight = jeepVariant ? 0.38f : (raceVariant ? 0.19f : 0.20f);
+        const float rearWindowLength = jeepVariant ? 0.50f : (raceVariant ? 0.42f : 0.52f);
+        const float frontWindowLength = jeepVariant ? 0.42f : (raceVariant ? 0.30f : 0.40f);
         const float rearWindowOffset = jeepVariant ? -0.34f : -0.05f;
-        const float frontWindowOffset = jeepVariant ? 0.34f : 0.43f;
+        const float frontWindowOffset = jeepVariant ? 0.34f : (raceVariant ? 0.34f : 0.43f);
         drawCarBox({cabinCenterX + rearWindowOffset, cabinCenterY, z},
                    {rearWindowLength, windowHeight, 0.035f},
                    {0.035f, 0.075f, 0.095f});
@@ -327,12 +354,14 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
                    {frontWindowLength, windowHeight, 0.035f},
                    {0.035f, 0.075f, 0.095f});
         const float mirrorX = cabinCenterX + cabinHalfLength - 0.08f;
-        const float mirrorHeightAdjustment = jeepVariant ? 0.06f : -0.025f;
+        const float mirrorHeightAdjustment = jeepVariant ? 0.06f
+            : (raceVariant ? 0.0f : -0.025f);
         const float mirrorY = cabinCenterY - 0.5f * windowHeight - 0.045f
             + mirrorHeightAdjustment;
-        const float mirrorOutset = jeepVariant ? 0.08f : 0.105f;
+        const float mirrorOutset = jeepVariant ? 0.08f
+            : (raceVariant ? 0.065f : 0.105f);
         const float mirrorZ = cabinHalfWidth + mirrorOutset;
-        const float mirrorStemOutset = 0.045f;
+        const float mirrorStemOutset = raceVariant ? 0.018f : 0.045f;
         const glm::vec3 mirrorColor(0.06f, 0.07f, 0.08f);
         drawCarBox({mirrorX, mirrorY - 0.028f,
                     side * (cabinHalfWidth + mirrorStemOutset)},
@@ -342,7 +371,7 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
     }
     // Door handles sit on the outside face of each body's side panel.
     for (const float side : {-1.0f, 1.0f}) {
-        const float handleY = 0.52f;
+        const float handleY = raceVariant ? bodyCenterY + 0.05f : 0.52f;
         const float handleZ = side * (bodyHalfWidth + 0.012f);
         const float rearHandleX = jeepVariant ? cabinCenterX - 0.24f : -0.22f;
         const float frontHandleX = jeepVariant ? cabinCenterX + 0.44f : 0.34f;
@@ -364,7 +393,7 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
 
     if (!jeepVariant) {
         const float rearFaceX = cabinCenterX - cabinHalfLength;
-        const float rearGlassHeight = 0.20f;
+        const float rearGlassHeight = raceVariant ? 0.22f : 0.20f;
         drawCarBox({rearFaceX - 0.015f, cabinCenterY, 0.0f},
                    {0.035f, rearGlassHeight, 1.7f * cabinHalfWidth},
                    {0.025f, 0.065f, 0.085f});
@@ -372,12 +401,12 @@ void AvtoVistaScene::render(GLint modelLocation, GLint normalLocation,
 
     // Four tires with metallic hubs.
     for (const float side : {-1.0f, 1.0f}) {
-        const float wheelPosition = jeepVariant ? 0.72f : 0.78f;
+        const float wheelPosition = raceVariant ? 0.82f : (jeepVariant ? 0.72f : 0.78f);
         const float wheelPositions[] = {
             jeepVariant ? -0.82f : -wheelPosition,
             wheelPosition
         };
-        const float wheelCenterY = 0.34f;
+        const float wheelCenterY = raceVariant ? 0.355f : 0.34f;
         const float wheelSideZ = bodyHalfWidth + 0.005f;
         for (const float x : wheelPositions) {
             const glm::mat4 tire = turntable *
@@ -486,5 +515,3 @@ void AvtoVistaScene::destroy() {
     cube_.destroy();
     cylinder_.destroy();
 }
-
-
